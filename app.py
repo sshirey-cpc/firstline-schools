@@ -110,33 +110,48 @@ def get_current_year():
         ORDER BY s.Job_Function
         """
 
-        # By tenure
+        # By tenure (using school-year based calculation)
         tenure_query = """
+        WITH staff_with_tenure AS (
+            SELECT
+                s.*,
+                i.Return,
+                COALESCE(i.Yes_NPS, i.Maybe_NPS, i.No_NPS) as nps,
+                GREATEST(
+                    IF(
+                        DATE(s.Last_Hire_Date) < DATE(EXTRACT(YEAR FROM CURRENT_DATE()) - IF(EXTRACT(MONTH FROM CURRENT_DATE()) < 7, 1, 0), 1, 1),
+                        EXTRACT(YEAR FROM CURRENT_DATE()) - EXTRACT(YEAR FROM DATE(s.Last_Hire_Date)),
+                        EXTRACT(YEAR FROM CURRENT_DATE()) - EXTRACT(YEAR FROM DATE(s.Last_Hire_Date)) - 1
+                    ),
+                    0
+                ) as years_of_service
+            FROM `talent-demo-482004.talent_grow_observations.staff_master_list_with_function` s
+            LEFT JOIN `talent-demo-482004.intent_to_return.intent_to_return_native` i
+                ON LOWER(s.Email_Address) = LOWER(i.Email_Address)
+            WHERE s.Employment_Status IN ('Active', 'Leave of absence')
+        )
         SELECT
             CASE
-                WHEN DATE_DIFF(CURRENT_DATE(), DATE(s.Last_Hire_Date), YEAR) < 1 THEN '< 1 year'
-                WHEN DATE_DIFF(CURRENT_DATE(), DATE(s.Last_Hire_Date), YEAR) < 3 THEN '1-2 years'
-                WHEN DATE_DIFF(CURRENT_DATE(), DATE(s.Last_Hire_Date), YEAR) < 5 THEN '3-4 years'
-                WHEN DATE_DIFF(CURRENT_DATE(), DATE(s.Last_Hire_Date), YEAR) < 10 THEN '5-9 years'
+                WHEN years_of_service < 1 THEN '< 1 year'
+                WHEN years_of_service < 3 THEN '1-2 years'
+                WHEN years_of_service < 5 THEN '3-4 years'
+                WHEN years_of_service < 10 THEN '5-9 years'
                 ELSE '10+ years'
             END as name,
             CASE
-                WHEN DATE_DIFF(CURRENT_DATE(), DATE(s.Last_Hire_Date), YEAR) < 1 THEN 1
-                WHEN DATE_DIFF(CURRENT_DATE(), DATE(s.Last_Hire_Date), YEAR) < 3 THEN 2
-                WHEN DATE_DIFF(CURRENT_DATE(), DATE(s.Last_Hire_Date), YEAR) < 5 THEN 3
-                WHEN DATE_DIFF(CURRENT_DATE(), DATE(s.Last_Hire_Date), YEAR) < 10 THEN 4
+                WHEN years_of_service < 1 THEN 1
+                WHEN years_of_service < 3 THEN 2
+                WHEN years_of_service < 5 THEN 3
+                WHEN years_of_service < 10 THEN 4
                 ELSE 5
             END as sort_order,
             COUNT(*) as total_staff,
-            SUM(CASE WHEN i.Return IS NOT NULL THEN 1 ELSE 0 END) as responded,
-            SUM(CASE WHEN i.Return = 'Yes' THEN 1 ELSE 0 END) as returning_yes,
-            SUM(CASE WHEN i.Return = 'No' THEN 1 ELSE 0 END) as returning_no,
-            SUM(CASE WHEN i.Return = 'Unsure' THEN 1 ELSE 0 END) as unsure,
-            ROUND(AVG(COALESCE(i.Yes_NPS, i.Maybe_NPS, i.No_NPS)), 1) as avg_nps
-        FROM `talent-demo-482004.talent_grow_observations.staff_master_list_with_function` s
-        LEFT JOIN `talent-demo-482004.intent_to_return.intent_to_return_native` i
-            ON LOWER(s.Email_Address) = LOWER(i.Email_Address)
-        WHERE s.Employment_Status IN ('Active', 'Leave of absence')
+            SUM(CASE WHEN Return IS NOT NULL THEN 1 ELSE 0 END) as responded,
+            SUM(CASE WHEN Return = 'Yes' THEN 1 ELSE 0 END) as returning_yes,
+            SUM(CASE WHEN Return = 'No' THEN 1 ELSE 0 END) as returning_no,
+            SUM(CASE WHEN Return = 'Unsure' THEN 1 ELSE 0 END) as unsure,
+            ROUND(AVG(nps), 1) as avg_nps
+        FROM staff_with_tenure
         GROUP BY name, sort_order
         ORDER BY sort_order
         """
