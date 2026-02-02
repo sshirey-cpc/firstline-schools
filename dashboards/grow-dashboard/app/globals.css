@@ -1,0 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --fls-orange: #e47727;
+  --fls-orange-dark: #c9621c;
+  --fls-navy: #002f60;
+  --fls-blue: #094aad;
+}
+
+body {
+  font-family: 'Open Sans', system-ui, -apple-system, sans-serif;
+}
