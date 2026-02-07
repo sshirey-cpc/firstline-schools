@@ -268,6 +268,40 @@ These indicate discrepancies between Position Control and the HR system:
 
 ---
 
+## Migration / Portability
+
+This application is designed to be easily migrated to a different GCP project. All GCP project references are centralized in `config.py`.
+
+### To Migrate to a New GCP Project
+
+1. **Copy BigQuery tables** to the new project:
+   ```bash
+   # Copy position control tables
+   bq cp talent-demo-482004:talent_grow_observations.position_control new-project:talent_grow_observations.position_control
+   bq cp talent-demo-482004:talent_grow_observations.position_history new-project:talent_grow_observations.position_history
+
+   # Copy staff data (if not already in new project)
+   bq cp talent-demo-482004:talent_grow_observations.staff_master_list_with_function new-project:talent_grow_observations.staff_master_list_with_function
+   ```
+
+2. **Update config.py** (one line):
+   ```python
+   PROJECT_ID = 'new-project-id'
+   ```
+
+3. **Enable required APIs** in the new project:
+   - BigQuery API
+   - Cloud Run API
+
+4. **Deploy to Cloud Run** in the new project:
+   ```bash
+   gcloud run deploy position-control --source . --region us-central1 --project new-project-id --allow-unauthenticated
+   ```
+
+5. **Update OAuth redirect URIs** in Google Cloud Console to include the new Cloud Run URL
+
+---
+
 ## Contact
 
 For access issues or questions, contact:
