@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Position Control | FirstLine Schools</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Open Sans', 'system-ui', '-apple-system', 'sans-serif'],
+                    },
+                    colors: {
+                        'fls-orange': '#e47727',
+                        'fls-orange-dark': '#c9621c',
+                        'fls-navy': '#002f60',
+                        'fls-blue': '#094aad',
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        body { font-family: 'Open Sans', system-ui, sans-serif; }
+        .loading { display: inline-block; width: 24px; height: 24px; border: 3px solid #e2e8f0; border-radius: 50%; border-top-color: #e47727; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .hidden { display: none !important; }
+        .segment-btn { padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 500; color: #64748b; transition: all 0.2s ease; white-space: nowrap; cursor: pointer; border: none; background: transparent; }
+        .segment-btn:hover { color: #334155; }
+        .segment-btn.active { background-color: #e47727; color: white; box-shadow: 0 1px 3px 0 rgba(228, 119, 39, 0.3); }
+        .table-row { transition: all 0.15s ease; cursor: pointer; }
+        .table-row:hover { background-color: #fef3e2 !important; }
+        .progress-bar { height: 8px; border-radius: 4px; background-color: #e2e8f0; overflow: hidden; }
+        .school-card { transition: all 0.2s ease; cursor: pointer; }
+        .school-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1); }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: flex; align-items: center; justify-content: center; }
+        .modal { background: white; border-radius: 1rem; max-width: 700px; width: 95%; max-height: 90vh; overflow-y: auto; }
+        .form-input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 0.875rem; }
+        .form-input:focus { outline: none; border-color: #e47727; box-shadow: 0 0 0 3px rgba(228, 119, 39, 0.1); }
+        .form-label { display: block; font-size: 0.75rem; font-weight: 600; color: #64748b; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .hover-card .hover-content { display: none; }
+        .hover-card:hover .hover-content { display: block; }
+        .hover-card:hover .hover-default { display: none; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-md">
+            <div class="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200 p-8">
+                <div class="flex items-center justify-center mb-6">
+                    <img src="https://firstlineschools.org/wp-content/uploads/2020/08/FLS-Logo_v2019_Color.png" alt="FirstLine Schools" class="h-16">
+                </div>
+                <h1 class="text-2xl font-semibold text-fls-navy text-center mb-2">Position Control</h1>
+                <p class="text-slate-500 text-center mb-8">Manage staffing positions across all schools</p>
+                <div id="authLoading" class="mb-6 text-center">
+                    <div class="loading mx-auto mb-3"></div>
+                    <p class="text-sm text-slate-500">Checking authentication...</p>
+                </div>
+                <a href="/login" id="googleSignInBtn" class="hidden flex items-center justify-center gap-3 w-full bg-white hover:bg-slate-50 text-slate-700 font-medium py-3 px-4 rounded-full border border-slate-300 transition-all shadow-sm hover:shadow">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Sign in with Google
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboardScreen" class="hidden">
+        <!-- Header -->
+        <header class="sticky top-0 z-50 bg-fls-navy border-b border-fls-navy">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center gap-4">
+                        <img src="https://firstlineschools.org/wp-content/uploads/2020/08/FLS-Logo_v2019_Color.png" alt="FirstLine Schools" class="h-10 bg-white rounded px-2 py-1">
+                        <div>
+                            <h1 class="text-lg font-semibold text-white">Position Control</h1>
+                            <p class="text-xs text-orange-200">SY 2025-26 → 2026-27</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="flex bg-white/10 rounded-lg p-1 gap-1">
+                            <button onclick="setView('overview')" id="tabOverview" class="segment-btn active">25-26 Overview</button>
+                            <button onclick="setView('summary')" id="tabSummary" class="segment-btn">26-27 Overview</button>
+                            <button onclick="setView('positions')" id="tabPositions" class="segment-btn">All Positions</button>
+                        </div>
+                        <button onclick="showAddModal()" class="bg-fls-orange hover:bg-fls-orange-dark text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">+ Add Position</button>
+                        <button onclick="showUnassignedModal()" id="unassignedBadge" class="hidden bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">
+                            <span id="unassignedCount">0</span> Unassigned
+                        </button>
+                        <div class="flex items-center gap-2">
+                            <img id="userPic" src="" alt="" class="w-8 h-8 rounded-full hidden">
+                            <span id="userName" class="text-sm text-white hidden"></span>
+                            <a href="/logout" class="text-xs text-orange-200 hover:text-white ml-2">Sign out</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div id="loadingState" class="flex items-center justify-center py-20">
+                <div class="text-center">
+                    <div class="loading mx-auto mb-4"></div>
+                    <p class="text-slate-500">Loading position data...</p>
+                </div>
+            </div>
+
+            <!-- 26-27 Overview -->
+            <div id="viewSummary" class="hidden">
+                <!-- Hiring Progress Timeline -->
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm mb-6" id="hiringTimeline">
+                    <div class="flex justify-between items-center mb-3">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-700">26-27 Hiring Progress</h3>
+                            <p class="text-xs text-slate-400" id="timelineStatus">Loading...</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold" id="currentPctDisplay">0%</div>
+                            <div class="text-xs text-slate-400" id="hiredCountDisplay">0 hired</div>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <!-- Progress bar background -->
+                        <div class="h-8 bg-slate-100 rounded-full overflow-hidden relative">
+                            <!-- Monthly markers -->
+                            <div class="absolute inset-0 flex">
+                                <div class="h-full border-r border-slate-300 border-dashed" style="width: 7%;" title="Jan: 7%"></div>
+                                <div class="h-full border-r border-slate-300 border-dashed" style="width: 9%;" title="Feb: 16%"></div>
+                                <div class="h-full border-r border-slate-300 border-dashed" style="width: 17%;" title="Mar: 33%"></div>
+                                <div class="h-full border-r border-slate-300 border-dashed" style="width: 17%;" title="Apr: 50%"></div>
+                                <div class="h-full border-r border-slate-300 border-dashed" style="width: 22%;" title="May: 72%"></div>
+                                <div class="h-full border-r border-slate-300 border-dashed" style="width: 16%;" title="Jun: 88%"></div>
+                                <div class="h-full border-r border-slate-300 border-dashed" style="width: 7%;" title="Jul: 95%"></div>
+                                <div class="h-full" style="width: 5%;" title="Aug: 100%"></div>
+                            </div>
+                            <!-- Current progress fill -->
+                            <div class="absolute inset-y-0 left-0 bg-gradient-to-r from-fls-orange to-orange-400 rounded-full transition-all duration-500" id="progressFill" style="width: 0%;"></div>
+                            <!-- Target marker -->
+                            <div class="absolute top-0 bottom-0 w-1 bg-fls-navy" id="targetMarker" style="left: 16%;"></div>
+                        </div>
+                        <!-- Month labels -->
+                        <div class="flex text-[9px] text-slate-400 mt-1 font-medium">
+                            <div style="width: 7%;" class="text-center">Jan<br/>7%</div>
+                            <div style="width: 9%;" class="text-center">Feb<br/>16%</div>
+                            <div style="width: 17%;" class="text-center">Mar<br/>33%</div>
+                            <div style="width: 17%;" class="text-center">Apr<br/>50%</div>
+                            <div style="width: 22%;" class="text-center">May<br/>72%</div>
+                            <div style="width: 16%;" class="text-center">Jun<br/>88%</div>
+                            <div style="width: 7%;" class="text-center">Jul<br/>95%</div>
+                            <div style="width: 5%;" class="text-center">Aug<br/>100%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Network Totals -->
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6" id="summaryTotals"></div>
+
+                <!-- Category Breakdown -->
+                <h3 class="text-sm font-bold text-slate-700 mb-3">26-27 Hiring Progress by Category</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="categoryCards"></div>
+
+                <!-- School Cards -->
+                <h3 class="text-sm font-bold text-slate-700 mb-3">26-27 School Breakdown</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="summarySchoolCards"></div>
+            </div>
+
+            <!-- Overview View -->
+            <div id="viewOverview" class="hidden">
+                <!-- Staffing Progress Bar -->
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm mb-6">
+                    <div class="flex justify-between items-center mb-3">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-700">25-26 Staffing Progress</h3>
+                            <p class="text-xs text-slate-400" id="staffingStatus">Loading...</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold" id="staffingPctDisplay">0%</div>
+                            <div class="text-xs text-slate-400" id="staffingCountDisplay">0 filled</div>
+                        </div>
+                    </div>
+                    <div class="h-6 bg-slate-100 rounded-full overflow-hidden relative">
+                        <div class="absolute inset-y-0 left-0 rounded-full transition-all duration-500" id="staffingFill" style="width: 0%; background: linear-gradient(to right, #22c55e, #16a34a);"></div>
+                    </div>
+                </div>
+
+                <!-- Network Totals -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="overviewTotals"></div>
+
+                <!-- Category Breakdown -->
+                <h3 class="text-sm font-bold text-slate-700 mb-3">Staffing by Category</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="overviewCategoryCards"></div>
+
+                <!-- School Cards -->
+                <h3 class="text-sm font-bold text-slate-700 mb-3">School Breakdown</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="schoolCards"></div>
+            </div>
+
+            <!-- All Positions View -->
+            <div id="viewPositions" class="hidden">
+                <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm mb-4">
+                    <div class="flex flex-wrap gap-3 items-center">
+                        <span class="text-xs font-bold text-slate-500 uppercase">Filters:</span>
+                        <select id="filterSchool" onchange="applyFilters()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+                            <option value="">All Schools</option>
+                        </select>
+                        <select id="filterCategory" onchange="applyFilters()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+                            <option value="">All Categories</option>
+                        </select>
+                        <div class="flex bg-slate-100 rounded-lg p-1">
+                            <button onclick="setYearView('25-26')" id="yearBtn2526" class="segment-btn active text-xs">25-26</button>
+                            <button onclick="setYearView('26-27')" id="yearBtn2627" class="segment-btn text-xs">26-27</button>
+                        </div>
+                        <div class="relative">
+                            <button type="button" onclick="toggleStatusDropdown()" id="statusDropdownBtn" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-left min-w-[140px] flex items-center justify-between gap-2">
+                                <span id="statusBtnText">All Statuses</span>
+                                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div id="statusDropdown" class="hidden absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-20 min-w-[160px] py-1">
+                                <label class="flex items-center px-3 py-1.5 hover:bg-slate-50 cursor-pointer text-sm">
+                                    <input type="checkbox" value="" onchange="applyStatusFilter()" class="statusCheckbox mr-2" checked> All Statuses
+                                </label>
+                                <div id="statusOptions"></div>
+                            </div>
+                        </div>
+                        <input type="text" id="searchInput" onkeyup="debounceSearch()" placeholder="Search..." class="flex-1 min-w-[150px] px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+                        <label class="flex items-center gap-1.5 text-sm text-slate-600 cursor-pointer">
+                            <input type="checkbox" id="filterMismatch" onchange="applyFilters()" class="rounded">
+                            <span>Mismatches only</span>
+                        </label>
+                        <button onclick="clearFilters()" class="px-3 py-2 text-slate-500 hover:text-fls-orange text-sm font-medium">Clear</button>
+                        <span class="text-sm text-slate-500 font-medium" id="positionCount">0 positions</span>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto max-h-[65vh]">
+                        <table class="w-full text-sm">
+                            <thead class="sticky top-0 bg-slate-50 z-10">
+                                <tr>
+                                    <th class="px-2 py-3 text-center text-xs font-bold text-slate-500 uppercase border-b-2 border-slate-200 w-10">Flag</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase border-b-2 border-slate-200 cursor-pointer" onclick="sortBy('school')">School</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase border-b-2 border-slate-200 cursor-pointer" onclick="sortBy('job_category')">Category</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase border-b-2 border-slate-200 cursor-pointer" onclick="sortBy('job_title')">Job Title</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase border-b-2 border-slate-200">Subject</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase border-b-2 border-slate-200">Grade</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase border-b-2 border-slate-200" id="employeeHeader">Employee</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase border-b-2 border-slate-200" id="statusHeader">Status</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase border-b-2 border-slate-200">ITR</th>
+                                </tr>
+                            </thead>
+                            <tbody id="positionsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 mt-2">Click any row to edit</p>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Unassigned Staff Modal -->
+    <div id="unassignedModal" class="modal-backdrop hidden">
+        <div class="modal" style="max-width: 800px;">
+            <div class="flex justify-between items-center px-6 py-4 border-b">
+                <h3 class="text-lg font-bold text-slate-800">Unassigned Staff <span class="text-sm font-normal text-slate-500">(In HR but not in Position Control)</span></h3>
+                <button onclick="closeUnassignedModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+            </div>
+            <div class="p-6 max-h-[70vh] overflow-y-auto">
+                <p class="text-sm text-slate-500 mb-4">These employees are active in the HR system but not assigned to any position. Click a row to copy their info.</p>
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase">Name</th>
+                            <th class="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase">EID</th>
+                            <th class="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase">Location</th>
+                            <th class="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase">Job Title</th>
+                            <th class="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase">Email</th>
+                        </tr>
+                    </thead>
+                    <tbody id="unassignedTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal-backdrop hidden">
+        <div class="modal">
+            <div class="flex justify-between items-center px-6 py-4 border-b">
+                <h3 class="text-lg font-bold text-slate-800" id="modalTitle">Edit Position</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+            </div>
+            <form id="positionForm" onsubmit="savePosition(event)" class="p-6">
+                <input type="hidden" id="editPositionId">
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="form-label">School</label>
+                        <select id="editSchool" class="form-input" required>
+                            <option value="Arthur Ashe">Arthur Ashe</option>
+                            <option value="Samuel J Green">Samuel J Green</option>
+                            <option value="Langston Hughes">Langston Hughes</option>
+                            <option value="Phillis Wheatley">Phillis Wheatley</option>
+                            <option value="Network">Network</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Category</label>
+                        <select id="editCategory" class="form-input" required>
+                            <option value="Leadership">Leadership</option>
+                            <option value="Teacher">Teacher</option>
+                            <option value="Support">Support</option>
+                            <option value="Operations">Operations</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="form-label">Job Title</label>
+                        <input type="text" id="editTitle" class="form-input" required>
+                    </div>
+                    <div>
+                        <label class="form-label">Subject</label>
+                        <input type="text" id="editSubject" class="form-input">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="form-label">Grade Level</label>
+                        <input type="text" id="editGrade" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">Staffing Matrix</label>
+                        <input type="text" id="editMatrix" class="form-input">
+                    </div>
+                </div>
+                <div class="mb-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <label class="form-label text-yellow-700">Candidate (Pre-Hire)</label>
+                    <input type="text" id="editCandidateName" class="form-input" placeholder="Name of candidate with offer out">
+                    <p class="text-xs text-yellow-600 mt-1">Use this for tracking candidates before they're in the HR system</p>
+                </div>
+                <div class="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200" id="assignFromHR">
+                    <label class="form-label text-blue-700">Assign from HR System (Onboarded Employee)</label>
+                    <select id="selectUnassigned" onchange="populateFromHR()" class="form-input">
+                        <option value="">-- Select an unassigned employee --</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="form-label">25-26 Employee <span class="text-xs text-slate-400 font-normal">(Official HR Name)</span></label>
+                        <div class="relative">
+                            <input type="text" id="editEmployee25" class="form-input pr-8">
+                            <button type="button" onclick="clearEmployeeFields()" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500" title="Clear employee">✕</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Email Address</label>
+                        <input type="email" id="editEmail" class="form-input">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="form-label">Employee Number (EID)</label>
+                        <input type="text" id="editEmployeeNumber" class="form-input" readonly>
+                    </div>
+                    <div></div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="form-label">Current Status (25-26)</label>
+                        <select id="editStatus25" class="form-input">
+                            <option value="Active">Active</option>
+                            <option value="Open">Open</option>
+                            <option value="Overhire">Overhire</option>
+                            <option value="Filled">Filled</option>
+                            <option value="Not Filling Seat">Not Filling Seat</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">26-27 Status</label>
+                        <select id="editStatus26" class="form-input">
+                            <option value="Return">Return</option>
+                            <option value="Possible Open">Possible Open</option>
+                            <option value="Open">Open</option>
+                            <option value="Filled">Filled</option>
+                            <option value="Seat Change">Seat Change</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="form-label">26-27 Employee</label>
+                        <input type="text" id="editEmployee26" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">ITR Response</label>
+                        <select id="editItr" class="form-input">
+                            <option value="">--</option>
+                            <option value="Yes">Yes</option>
+                            <option value="Unsure">Unsure</option>
+                            <option value="No">No</option>
+                            <option value="No response yet">No response yet</option>
+                            <option value="Open seat">Open seat</option>
+                            <option value="New Hire">New Hire</option>
+                            <option value="Leave">Leave</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label">Notes</label>
+                    <textarea id="editNotes" class="form-input" rows="2"></textarea>
+                </div>
+                <div class="flex justify-between">
+                    <button type="button" id="deleteBtn" onclick="deletePosition()" class="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium hidden">Delete Position</button>
+                    <div class="flex gap-2 ml-auto">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-fls-orange hover:bg-fls-orange-dark text-white rounded-lg text-sm font-medium">Save Changes</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentView = 'overview';
+        let yearView = '25-26';
+        let positions = [];
+        let filteredPositions = [];
+        let stats = {};
+        let schoolData = [];
+        let filterOptions = {};
+        let hiringSummary = [];
+        let unassignedStaff = [];
+        let sortCol = null;
+        let sortDir = 'asc';
+        let searchTimeout = null;
+
+        const STATUS_COLORS = {
+            'Active': { bg: 'bg-green-100', text: 'text-green-700', dot: 'bg-green-500' },
+            'Open': { bg: 'bg-orange-100', text: 'text-orange-700', dot: 'bg-orange-500' },
+            'Overhire': { bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
+            'Filled': { bg: 'bg-purple-100', text: 'text-purple-700', dot: 'bg-purple-500' },
+        };
+        const STATUS26_COLORS = {
+            'Return': { bg: 'bg-green-100', text: 'text-green-700', dot: 'bg-green-500' },
+            'Possible Open': { bg: 'bg-yellow-100', text: 'text-yellow-700', dot: 'bg-yellow-500' },
+            'Open': { bg: 'bg-red-100', text: 'text-red-700', dot: 'bg-red-500' },
+            'Filled': { bg: 'bg-purple-100', text: 'text-purple-700', dot: 'bg-purple-500' },
+        };
+        const ITR_COLORS = {
+            'Yes': { bg: 'bg-green-100', text: 'text-green-700' },
+            'Unsure': { bg: 'bg-yellow-100', text: 'text-yellow-700' },
+            'No': { bg: 'bg-red-100', text: 'text-red-700' },
+            'No response yet': { bg: 'bg-orange-100', text: 'text-orange-700' },
+            'Open seat': { bg: 'bg-slate-100', text: 'text-slate-600' },
+            'New Hire': { bg: 'bg-blue-100', text: 'text-blue-700' },
+        };
+
+        document.addEventListener('DOMContentLoaded', checkAuth);
+
+        async function checkAuth() {
+            try {
+                const res = await fetch('/api/auth/status');
+                const data = await res.json();
+                data.authenticated ? showDashboard(data.user) : showLogin();
+            } catch (e) { showLogin(); }
+        }
+
+        function showLogin() {
+            document.getElementById('authLoading').classList.add('hidden');
+            document.getElementById('googleSignInBtn').classList.remove('hidden');
+        }
+
+        async function showDashboard(user) {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('dashboardScreen').classList.remove('hidden');
+            if (user.picture) { document.getElementById('userPic').src = user.picture; document.getElementById('userPic').classList.remove('hidden'); }
+            if (user.name) { document.getElementById('userName').textContent = user.name; document.getElementById('userName').classList.remove('hidden'); }
+            await loadData();
+        }
+
+        async function loadData() {
+            try {
+                const [posRes, statsRes, schoolRes, filterRes, summaryRes, unassignedRes] = await Promise.all([
+                    fetch('/api/positions'), fetch('/api/positions/stats'), fetch('/api/positions/by-school'),
+                    fetch('/api/positions/filter-options'), fetch('/api/hiring-summary'), fetch('/api/unassigned-staff')
+                ]);
+                positions = await posRes.json();
+                stats = await statsRes.json();
+                schoolData = await schoolRes.json();
+                filterOptions = await filterRes.json();
+                hiringSummary = await summaryRes.json();
+                const unassignedData = await unassignedRes.json();
+                unassignedStaff = unassignedData.staff || [];
+                filteredPositions = [...positions];
+                populateFilters();
+                renderSummary();
+                renderOverview();
+                renderUnassignedBadge();
+                applyFilters();
+                document.getElementById('loadingState').classList.add('hidden');
+                setView('overview');
+            } catch (e) {
+                document.getElementById('loadingState').innerHTML = `<div class="text-center text-red-600"><p>Failed to load: ${e.message}</p></div>`;
+            }
+        }
+
+        function setView(view) {
+            currentView = view;
+            document.querySelectorAll('[id^="view"]').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('[id^="tab"]').forEach(el => el.classList.remove('active'));
+            document.getElementById('view' + view.charAt(0).toUpperCase() + view.slice(1)).classList.remove('hidden');
+            document.getElementById('tab' + view.charAt(0).toUpperCase() + view.slice(1)).classList.add('active');
+        }
+
+        function setYearView(year) {
+            yearView = year;
+            document.getElementById('yearBtn2526').classList.toggle('active', year === '25-26');
+            document.getElementById('yearBtn2627').classList.toggle('active', year === '26-27');
+            document.getElementById('statusHeader').textContent = year === '25-26' ? '25-26 Status' : '26-27 Status';
+            document.getElementById('employeeHeader').textContent = year === '25-26' ? '25-26 Employee' : '26-27 Employee';
+            updateStatusFilter();
+            applyFilters();
+        }
+
+        function populateFilters() {
+            const schoolSel = document.getElementById('filterSchool');
+            const catSel = document.getElementById('filterCategory');
+            filterOptions.schools?.forEach(s => { schoolSel.innerHTML += `<option value="${s}">${s}</option>`; });
+            filterOptions.categories?.forEach(c => { catSel.innerHTML += `<option value="${c}">${c}</option>`; });
+            updateStatusFilter();
+        }
+
+        let selectedStatuses = [];
+
+        function updateStatusFilter() {
+            const container = document.getElementById('statusOptions');
+            const statuses = yearView === '25-26' ? filterOptions.statuses : filterOptions.statuses_26;
+            container.innerHTML = (statuses || []).map(s => `
+                <label class="flex items-center px-3 py-1.5 hover:bg-slate-50 cursor-pointer text-sm">
+                    <input type="checkbox" value="${s}" onchange="applyStatusFilter()" class="statusCheckbox mr-2"> ${s}
+                </label>
+            `).join('');
+            selectedStatuses = [];
+            updateStatusButtonText();
+        }
+
+        function toggleStatusDropdown() {
+            document.getElementById('statusDropdown').classList.toggle('hidden');
+        }
+
+        function applyStatusFilter() {
+            const allCheckbox = document.querySelector('.statusCheckbox[value=""]');
+            const statusCheckboxes = document.querySelectorAll('.statusCheckbox:not([value=""])');
+
+            if (event.target.value === '') {
+                // "All" was clicked
+                if (allCheckbox.checked) {
+                    statusCheckboxes.forEach(cb => cb.checked = false);
+                    selectedStatuses = [];
+                }
+            } else {
+                // A specific status was clicked
+                allCheckbox.checked = false;
+                selectedStatuses = Array.from(statusCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+                if (selectedStatuses.length === 0) {
+                    allCheckbox.checked = true;
+                }
+            }
+            updateStatusButtonText();
+            applyFilters();
+        }
+
+        function updateStatusButtonText() {
+            const btn = document.getElementById('statusBtnText');
+            if (selectedStatuses.length === 0) {
+                btn.textContent = 'All Statuses';
+            } else if (selectedStatuses.length === 1) {
+                btn.textContent = selectedStatuses[0];
+            } else {
+                btn.textContent = `${selectedStatuses.length} selected`;
+            }
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('statusDropdown');
+            const btn = document.getElementById('statusDropdownBtn');
+            if (dropdown && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        function applyFilters() {
+            const school = document.getElementById('filterSchool').value;
+            const cat = document.getElementById('filterCategory').value;
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            filteredPositions = positions.filter(p => {
+                if (school && p.school !== school) return false;
+                if (cat && p.job_category !== cat) return false;
+                if (selectedStatuses.length > 0) {
+                    const posStatus = yearView === '25-26' ? p.current_status : p.status_26_27;
+                    if (!selectedStatuses.includes(posStatus)) return false;
+                }
+                if (search && ![p.first_name, p.last_name, p.job_title, p.subject, p.school, p.employee_25_26].filter(Boolean).join(' ').toLowerCase().includes(search)) return false;
+                // Mismatch filter
+                if (document.getElementById('filterMismatch').checked) {
+                    const hasFlag = p.flag_not_in_hr || p.flag_status_mismatch || p.flag_subject_mismatch || p.flag_title_mismatch || p.flag_location_mismatch;
+                    if (!hasFlag) return false;
+                }
+                return true;
+            });
+            if (sortCol) filteredPositions.sort((a, b) => {
+                let va = (a[sortCol] || '').toString().toLowerCase(), vb = (b[sortCol] || '').toString().toLowerCase();
+                return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+            });
+            renderPositionsTable();
+        }
+
+        function debounceSearch() { clearTimeout(searchTimeout); searchTimeout = setTimeout(applyFilters, 300); }
+        function sortBy(col) { if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc'; else { sortCol = col; sortDir = 'asc'; } applyFilters(); }
+        function clearFilters() {
+            document.getElementById('filterSchool').value = '';
+            document.getElementById('filterCategory').value = '';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('filterMismatch').checked = false;
+            // Reset status checkboxes
+            document.querySelectorAll('.statusCheckbox').forEach(cb => cb.checked = cb.value === '');
+            selectedStatuses = [];
+            updateStatusButtonText();
+            sortCol = null;
+            sortDir = 'asc';
+            applyFilters();
+        }
+
+        function renderSummary() {
+            const totals = hiringSummary.find(r => r.school === 'ALL SCHOOLS') || {};
+            const allData = totals.All || {};
+
+            // Hiring targets by month
+            const monthlyTargets = {
+                0: { pct: 7, label: 'January' },    // January
+                1: { pct: 16, label: 'February' },  // February
+                2: { pct: 33, label: 'March' },     // March
+                3: { pct: 50, label: 'April' },     // April
+                4: { pct: 72, label: 'May' },       // May
+                5: { pct: 88, label: 'June' },      // June
+                6: { pct: 95, label: 'July' },      // July
+                7: { pct: 100, label: 'August' },   // August
+            };
+
+            // Calculate current progress
+            const hired = allData.hired || 0;
+            const totalToHire = allData.total_to_hire || 0;
+            const currentPct = totalToHire > 0 ? Math.round((hired / totalToHire) * 100) : 0;
+
+            // Get current month target (February = 1)
+            const currentMonth = new Date().getMonth();
+            const target = monthlyTargets[currentMonth] || monthlyTargets[1];
+            const targetPct = target.pct;
+
+            // Update progress bar
+            document.getElementById('progressFill').style.width = currentPct + '%';
+            document.getElementById('targetMarker').style.left = targetPct + '%';
+            document.getElementById('currentPctDisplay').textContent = currentPct + '%';
+            document.getElementById('currentPctDisplay').className = 'text-2xl font-bold ' +
+                (currentPct >= targetPct ? 'text-green-600' : currentPct >= targetPct - 10 ? 'text-yellow-600' : 'text-red-600');
+            document.getElementById('hiredCountDisplay').textContent = hired + ' of ' + totalToHire + ' hired';
+
+            // Status message
+            const diff = currentPct - targetPct;
+            let statusMsg = '';
+            if (diff >= 0) {
+                statusMsg = `✓ On track! ${diff > 0 ? diff + '% ahead of ' : 'Meeting '}${target.label} target (${targetPct}%)`;
+                document.getElementById('timelineStatus').className = 'text-xs text-green-600 font-medium';
+            } else {
+                statusMsg = `⚠ ${Math.abs(diff)}% behind ${target.label} target (${targetPct}%)`;
+                document.getElementById('timelineStatus').className = 'text-xs text-red-600 font-medium';
+            }
+            document.getElementById('timelineStatus').textContent = statusMsg;
+
+            // Network totals cards for 26-27
+            document.getElementById('summaryTotals').innerHTML = `
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">26-27 Openings</div>
+                    <div class="text-3xl font-bold text-slate-900">${allData.total_to_hire || 0}</div>
+                    <div class="text-xs text-slate-400 mt-1">Total positions to fill</div>
+                </div>
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Hired for 26-27</div>
+                    <div class="text-3xl font-bold text-green-600">${allData.hired || 0}</div>
+                    <div class="text-xs text-slate-400 mt-1">New hires confirmed</div>
+                </div>
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Remaining</div>
+                    <div class="text-3xl font-bold text-orange-600">${allData.remaining || 0}</div>
+                    <div class="text-xs text-slate-400 mt-1">Still need to fill</div>
+                </div>
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">% to Hiring Goal</div>
+                    <div class="text-3xl font-bold ${allData.pct_goal >= 50 ? 'text-green-600' : allData.pct_goal > 0 ? 'text-yellow-600' : 'text-red-600'}">${allData.pct_goal !== null ? allData.pct_goal + '%' : '0%'}</div>
+                    <div class="text-xs text-slate-400 mt-1">26-27 hiring progress</div>
+                </div>
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">25-26 Staffed</div>
+                    <div class="text-3xl font-bold ${allData.pct_staffed >= 95 ? 'text-green-600' : allData.pct_staffed >= 90 ? 'text-yellow-600' : 'text-red-600'}">${allData.pct_staffed || 0}%</div>
+                    <div class="text-xs text-slate-400 mt-1">Current year baseline</div>
+                </div>
+            `;
+
+            // Category cards
+            const cats = ['Leadership', 'Teacher', 'Support', 'Operations'];
+            const catLabels = { Leadership: 'Leaders', Teacher: 'Teachers', Support: 'Support', Operations: 'Operations' };
+            const catColors = { Leadership: 'blue', Teacher: 'purple', Support: 'teal', Operations: 'slate' };
+
+            document.getElementById('categoryCards').innerHTML = cats.map(cat => {
+                const d = totals[cat] || {};
+                const pctClass = d.pct_goal >= 50 ? 'text-green-600' : d.pct_goal > 0 ? 'text-yellow-600' : 'text-red-600';
+                return `
+                    <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="text-sm font-bold text-slate-700">${catLabels[cat]}</div>
+                            <div class="px-2 py-0.5 rounded text-xs font-bold ${pctClass} bg-opacity-10" style="background: currentColor; --tw-bg-opacity: 0.1;">${d.pct_goal !== null ? d.pct_goal + '%' : '0%'}</div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div>
+                                <div class="text-xl font-bold text-slate-900">${d.total_to_hire || 0}</div>
+                                <div class="text-[10px] text-slate-400 uppercase">To Hire</div>
+                            </div>
+                            <div>
+                                <div class="text-xl font-bold text-green-600">${d.hired || 0}</div>
+                                <div class="text-[10px] text-slate-400 uppercase">Hired</div>
+                            </div>
+                            <div>
+                                <div class="text-xl font-bold text-orange-600">${d.remaining || 0}</div>
+                                <div class="text-[10px] text-slate-400 uppercase">Left</div>
+                            </div>
+                        </div>
+                        <div class="mt-3 progress-bar flex">
+                            <div style="width: ${d.total_to_hire > 0 ? (d.hired / d.total_to_hire * 100) : 0}%; background: #22c55e;"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // School cards
+            const schools = hiringSummary.filter(r => r.school !== 'ALL SCHOOLS');
+            document.getElementById('summarySchoolCards').innerHTML = schools.map(row => {
+                const all = row.All || {};
+                const hired = all.hired || 0;
+                const totalToHire = all.total_to_hire || 0;
+                const remaining = all.remaining || 0;
+                const pctGoal = totalToHire > 0 ? Math.round((hired / totalToHire) * 100) : 0;
+                const goalClass = pctGoal >= 75 ? 'bg-green-100 text-green-700' : pctGoal >= 25 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700';
+
+                return `
+                    <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <div class="font-bold text-slate-900">${row.school}</div>
+                                <div class="text-xs text-slate-400 mt-1">${totalToHire} positions to hire for 26-27</div>
+                            </div>
+                            <div class="flex gap-2">
+                                <div class="px-3 py-1 rounded-lg text-sm font-bold ${goalClass}">${hired}/${totalToHire} hired (${pctGoal}%)</div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-4 gap-3">
+                            ${cats.map(cat => {
+                                const d = row[cat] || {};
+                                const catHired = d.hired || 0;
+                                const catTotal = d.total_to_hire || 0;
+                                const catPct = catTotal > 0 ? Math.round((catHired / catTotal) * 100) : 0;
+                                const catColor = catHired > 0 ? 'text-green-600' : 'text-slate-900';
+                                const pctColor = catPct >= 50 ? 'text-green-600' : catPct > 0 ? 'text-yellow-600' : 'text-slate-400';
+                                return `
+                                    <div class="text-center p-2 bg-slate-50 rounded-lg">
+                                        <div class="text-[10px] text-slate-400 uppercase mb-1">${catLabels[cat]}</div>
+                                        <div class="text-lg font-bold ${catColor}">${catHired}<span class="text-slate-400 font-normal">/${catTotal}</span></div>
+                                        <div class="text-[10px] ${pctColor}">${catTotal > 0 ? catPct + '% done' : '-'}</div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderOverview() {
+            const total = stats.total || 0;
+            const active = stats.active || 0;
+            const overhire = stats.overhire || 0;
+            const onboarding = stats.onboarding || 0;
+            const open = stats.open_25 || 0;
+            const pctStaffed = total > 0 ? Math.round((active / total) * 100) : 0;
+
+            // Update progress bar
+            document.getElementById('staffingFill').style.width = Math.min(pctStaffed, 100) + '%';
+            document.getElementById('staffingPctDisplay').textContent = pctStaffed + '%';
+            document.getElementById('staffingPctDisplay').className = 'text-2xl font-bold ' +
+                (pctStaffed >= 95 ? 'text-green-600' : pctStaffed >= 90 ? 'text-yellow-600' : 'text-red-600');
+            document.getElementById('staffingCountDisplay').textContent = active + ' of ' + total + ' active' + (overhire > 0 ? ' (+' + overhire + ' overhire)' : '');
+
+            // Status message
+            if (pctStaffed >= 95) {
+                document.getElementById('staffingStatus').textContent = '✓ Fully staffed!';
+                document.getElementById('staffingStatus').className = 'text-xs text-green-600 font-medium';
+            } else {
+                document.getElementById('staffingStatus').textContent = `${open} positions still need to be filled`;
+                document.getElementById('staffingStatus').className = 'text-xs text-orange-600 font-medium';
+            }
+
+            // Network totals cards
+            const returning = stats.returning || 0;
+            const atRisk = (stats.possible_open || 0) + (stats.open_26 || 0);
+            document.getElementById('overviewTotals').innerHTML = `
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Total Positions</div>
+                    <div class="text-3xl font-bold text-slate-900">${total}</div>
+                    <div class="text-xs text-slate-400 mt-1">All schools & network</div>
+                </div>
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Currently Open</div>
+                    <div class="text-3xl font-bold text-red-600">${open}</div>
+                    <div class="text-xs text-slate-400 mt-1">25-26 vacancies</div>
+                </div>
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Returning 26-27</div>
+                    <div class="text-3xl font-bold text-blue-600">${returning}</div>
+                    <div class="text-xs text-slate-400 mt-1">${total > 0 ? Math.round((returning / total) * 100) : 0}% retention</div>
+                </div>
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">At Risk 26-27</div>
+                    <div class="text-3xl font-bold text-orange-600">${atRisk}</div>
+                    <div class="text-xs text-slate-400 mt-1">${stats.possible_open || 0} unsure + ${stats.open_26 || 0} leaving</div>
+                </div>
+            `;
+
+            // Category cards - aggregate from school data
+            const catTotals = { Teacher: {total: 0, active: 0, onboarding: 0, open: 0}, Support: {total: 0, active: 0, onboarding: 0, open: 0}, Leadership: {total: 0, active: 0, onboarding: 0, open: 0}, Operations: {total: 0, active: 0, onboarding: 0, open: 0} };
+            schoolData.forEach(s => {
+                catTotals.Teacher.total += s.teachers || 0;
+                catTotals.Teacher.active += s.teachers_active || 0;
+                catTotals.Teacher.onboarding += s.teachers_onboarding || 0;
+                catTotals.Teacher.open += s.teachers_open || 0;
+                catTotals.Support.total += s.support || 0;
+                catTotals.Support.active += s.support_active || 0;
+                catTotals.Support.onboarding += s.support_onboarding || 0;
+                catTotals.Support.open += s.support_open || 0;
+                catTotals.Leadership.total += s.leadership || 0;
+                catTotals.Leadership.active += s.leadership_active || 0;
+                catTotals.Leadership.onboarding += s.leadership_onboarding || 0;
+                catTotals.Leadership.open += s.leadership_open || 0;
+                catTotals.Operations.total += s.operations || 0;
+                catTotals.Operations.active += s.operations_active || 0;
+                catTotals.Operations.onboarding += s.operations_onboarding || 0;
+                catTotals.Operations.open += s.operations_open || 0;
+            });
+
+            const catLabels = { Teacher: 'Teachers', Support: 'Support', Leadership: 'Leaders', Operations: 'Operations' };
+            document.getElementById('overviewCategoryCards').innerHTML = ['Teacher', 'Support', 'Leadership', 'Operations'].map(cat => {
+                const d = catTotals[cat];
+                const pct = d.total > 0 ? Math.round((d.active / d.total) * 100) : 0;
+                const pctClass = pct >= 95 ? 'text-green-600' : pct >= 90 ? 'text-yellow-600' : 'text-red-600';
+                return `
+                    <div class="hover-card bg-white rounded-xl p-5 border border-slate-200 shadow-sm cursor-pointer">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="text-sm font-bold text-slate-700">${catLabels[cat]}</div>
+                            <div class="px-2 py-0.5 rounded text-xs font-bold ${pctClass}" style="background: currentColor; --tw-bg-opacity: 0.1;">${pct}%</div>
+                        </div>
+                        <div class="hover-default text-2xl font-bold ${d.open > 0 ? 'text-orange-600' : 'text-green-600'}">${d.active}<span class="text-slate-400 font-normal text-lg">/${d.total}</span></div>
+                        <div class="hover-content text-xs space-y-1">
+                            <div class="text-green-600 font-medium">${d.active} active</div>
+                            <div class="text-yellow-600 font-medium">${d.onboarding} onboarding</div>
+                            <div class="text-red-600 font-medium">${d.open} open</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // School cards - cleaner design matching 26-27
+            const cats25 = ['teachers', 'support', 'leadership', 'operations'];
+            const catLabels25 = { teachers: 'Teachers', support: 'Support', leadership: 'Leaders', operations: 'Operations' };
+            document.getElementById('schoolCards').innerHTML = schoolData.map(s => {
+                const schoolPct = s.pct_staffed || 0;
+                const pctClass = schoolPct >= 95 ? 'bg-green-100 text-green-700' : schoolPct >= 90 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700';
+                return `
+                <div class="school-card bg-white rounded-xl p-5 border border-slate-200 shadow-sm" onclick="filterBySchool('${s.school}')">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <div class="font-bold text-slate-900">${s.school}</div>
+                            <div class="text-xs text-slate-400 mt-1">${s.total} positions</div>
+                        </div>
+                        <div class="px-3 py-1 rounded-lg text-sm font-bold ${pctClass}">${schoolPct}% staffed</div>
+                    </div>
+                    <div class="grid grid-cols-4 gap-3">
+                        ${cats25.map(cat => {
+                            const catActive = s[cat + '_active'] || 0;
+                            const catTotal = s[cat] || 0;
+                            const catOnboarding = s[cat + '_onboarding'] || 0;
+                            const catOpen = s[cat + '_open'] || 0;
+                            return `
+                            <div class="hover-card text-center p-2 bg-slate-50 rounded-lg cursor-pointer">
+                                <div class="text-[10px] text-slate-400 uppercase mb-1">${catLabels25[cat]}</div>
+                                <div class="hover-default text-lg font-bold ${catOpen > 0 ? 'text-orange-600' : 'text-green-600'}">${catActive}<span class="text-slate-400 font-normal">/${catTotal}</span></div>
+                                <div class="hover-content text-[10px] space-y-0.5">
+                                    <div class="text-green-600 font-medium">${catActive} active</div>
+                                    <div class="text-yellow-600 font-medium">${catOnboarding} onboard</div>
+                                    <div class="text-red-600 font-medium">${catOpen} open</div>
+                                </div>
+                            </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        function renderPositionsTable() {
+            document.getElementById('positionCount').textContent = `${filteredPositions.length} positions`;
+            document.getElementById('positionsTableBody').innerHTML = filteredPositions.map((p, i) => {
+                const status = yearView === '25-26' ? p.current_status : p.status_26_27;
+                const sc = (yearView === '25-26' ? STATUS_COLORS : STATUS26_COLORS)[status] || { bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400' };
+                const ic = ITR_COLORS[p.itr_response] || { bg: 'bg-slate-100', text: 'text-slate-600' };
+
+                // Build mismatch flags
+                const flags = [];
+                if (p.flag_not_in_hr) flags.push({ icon: '!', title: 'Not found in HR system', color: 'bg-red-500' });
+                if (p.flag_status_mismatch) flags.push({ icon: 'S', title: `Status mismatch: HR shows "${p.hr_status}"`, color: 'bg-orange-500' });
+                if (p.flag_subject_mismatch) flags.push({ icon: 'Su', title: `Subject mismatch: Position="${p.subject}", HR="${p.hr_subject}"`, color: 'bg-yellow-500' });
+                if (p.flag_title_mismatch) flags.push({ icon: 'T', title: `Title mismatch: Position="${p.job_title}", HR="${p.hr_job_title}"`, color: 'bg-blue-500' });
+                if (p.flag_location_mismatch) flags.push({ icon: 'L', title: `Location mismatch: Position="${p.school}", HR="${p.hr_location}"`, color: 'bg-purple-500' });
+
+                const flagHtml = flags.length > 0
+                    ? flags.map(f => `<span class="inline-flex items-center justify-center w-5 h-5 ${f.color} text-white text-[9px] font-bold rounded cursor-help" title="${f.title}">${f.icon}</span>`).join('')
+                    : '<span class="text-green-500">✓</span>';
+
+                return `<tr class="table-row ${flags.length > 0 ? 'bg-red-50/30' : (i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50')} border-b border-slate-100" onclick="editPosition('${p.position_id}')">
+                    <td class="px-2 py-3 text-center"><div class="flex gap-0.5 justify-center">${flagHtml}</div></td>
+                    <td class="px-4 py-3 font-medium">${p.school || '-'}</td>
+                    <td class="px-4 py-3">${p.job_category || '-'}</td>
+                    <td class="px-4 py-3 font-semibold">${p.job_title || '-'}</td>
+                    <td class="px-4 py-3 text-slate-500">${p.subject || '-'}</td>
+                    <td class="px-4 py-3 text-slate-500">${p.grade_level || '-'}</td>
+                    <td class="px-4 py-3">${yearView === '26-27'
+                        ? (p.employee_26_27 ? p.employee_26_27 : (p.candidate_name ? `<span class="text-yellow-600 italic" title="Candidate">${p.candidate_name} ⏳</span>` : '<span class="text-slate-300 italic">TBD</span>'))
+                        : (p.employee_25_26 ? p.employee_25_26 : (p.candidate_name ? `<span class="text-yellow-600 italic" title="Candidate">${p.candidate_name} ⏳</span>` : '<span class="text-slate-300 italic">Vacant</span>'))
+                    }</td>
+                    <td class="px-4 py-3"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${sc.bg} ${sc.text}"><span class="w-1.5 h-1.5 rounded-full ${sc.dot}"></span>${status || '-'}</span></td>
+                    <td class="px-4 py-3"><span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${ic.bg} ${ic.text}">${p.itr_response || '-'}</span></td>
+                </tr>`;
+            }).join('');
+        }
+
+        function filterBySchool(school) { document.getElementById('filterSchool').value = school; setView('positions'); applyFilters(); }
+
+        // Modal functions
+        function showAddModal() {
+            document.getElementById('modalTitle').textContent = 'Add New Position';
+            document.getElementById('editPositionId').value = '';
+            document.getElementById('positionForm').reset();
+            document.getElementById('editCandidateName').value = '';
+            document.getElementById('editEmployeeNumber').value = '';
+            document.getElementById('deleteBtn').classList.add('hidden');
+            populateUnassignedDropdown();
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        async function editPosition(id) {
+            try {
+                const res = await fetch(`/api/positions/${id}`);
+                const p = await res.json();
+                document.getElementById('modalTitle').textContent = 'Edit Position';
+                document.getElementById('editPositionId').value = id;
+                document.getElementById('editSchool').value = p.school || '';
+                document.getElementById('editCategory').value = p.job_category || '';
+                document.getElementById('editTitle').value = p.job_title || '';
+                document.getElementById('editSubject').value = p.subject || '';
+                document.getElementById('editGrade').value = p.grade_level || '';
+                document.getElementById('editMatrix').value = p.staffing_matrix || '';
+                document.getElementById('editCandidateName').value = p.candidate_name || '';
+                document.getElementById('editEmployee25').value = p.employee_25_26 || '';
+                document.getElementById('editEmail').value = p.email_address || '';
+                document.getElementById('editEmployeeNumber').value = p.employee_number || '';
+                document.getElementById('editStatus25').value = p.current_status || 'Active';
+                document.getElementById('editStatus26').value = p.status_26_27 || 'Open';
+                document.getElementById('editEmployee26').value = p.employee_26_27 || '';
+                document.getElementById('editItr').value = p.itr_response || '';
+                document.getElementById('editNotes').value = p.notes || '';
+                document.getElementById('deleteBtn').classList.remove('hidden');
+                populateUnassignedDropdown();
+                document.getElementById('selectUnassigned').value = '';
+                document.getElementById('editModal').classList.remove('hidden');
+            } catch (e) { alert('Error loading position'); }
+        }
+
+        function closeModal() { document.getElementById('editModal').classList.add('hidden'); }
+
+        async function savePosition(e) {
+            e.preventDefault();
+            const id = document.getElementById('editPositionId').value;
+            const data = {
+                school: document.getElementById('editSchool').value,
+                job_category: document.getElementById('editCategory').value,
+                job_title: document.getElementById('editTitle').value,
+                subject: document.getElementById('editSubject').value,
+                grade_level: document.getElementById('editGrade').value,
+                staffing_matrix: document.getElementById('editMatrix').value,
+                candidate_name: document.getElementById('editCandidateName').value,
+                employee_25_26: document.getElementById('editEmployee25').value,
+                email_address: document.getElementById('editEmail').value,
+                employee_number: document.getElementById('editEmployeeNumber').value,
+                current_status: document.getElementById('editStatus25').value,
+                status_26_27: document.getElementById('editStatus26').value,
+                employee_26_27: document.getElementById('editEmployee26').value,
+                itr_response: document.getElementById('editItr').value,
+                notes: document.getElementById('editNotes').value,
+            };
+            try {
+                const res = await fetch(id ? `/api/positions/${id}` : '/api/positions', {
+                    method: id ? 'PUT' : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) { closeModal(); await loadData(); }
+                else { const err = await res.json(); alert(err.error || 'Save failed'); }
+            } catch (e) { alert('Error saving'); }
+        }
+
+        async function deletePosition() {
+            if (!confirm('Delete this position?')) return;
+            const id = document.getElementById('editPositionId').value;
+            try {
+                const res = await fetch(`/api/positions/${id}`, { method: 'DELETE' });
+                if (res.ok) { closeModal(); await loadData(); }
+                else { alert('Delete failed'); }
+            } catch (e) { alert('Error deleting'); }
+        }
+
+        function clearEmployeeFields() {
+            document.getElementById('editEmployee25').value = '';
+            document.getElementById('editEmail').value = '';
+            document.getElementById('editEmployeeNumber').value = '';
+            document.getElementById('editStatus25').value = 'Open';
+            document.getElementById('selectUnassigned').value = '';
+        }
+
+        function renderUnassignedBadge() {
+            const badge = document.getElementById('unassignedBadge');
+            const count = document.getElementById('unassignedCount');
+            if (unassignedStaff.length > 0) {
+                count.textContent = unassignedStaff.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function showUnassignedModal() {
+            const tbody = document.getElementById('unassignedTableBody');
+            tbody.innerHTML = unassignedStaff.map(s => `
+                <tr class="border-b border-slate-100 hover:bg-yellow-50 cursor-pointer" onclick="copyUnassignedInfo('${s.email}')">
+                    <td class="px-3 py-2 font-medium">${s.first_name} ${s.last_name}</td>
+                    <td class="px-3 py-2 text-slate-500">${s.employee_id || '-'}</td>
+                    <td class="px-3 py-2">${s.location || '-'}</td>
+                    <td class="px-3 py-2">${s.job_title || '-'}</td>
+                    <td class="px-3 py-2 text-slate-500">${s.email || '-'}</td>
+                </tr>
+            `).join('');
+            document.getElementById('unassignedModal').classList.remove('hidden');
+        }
+
+        function closeUnassignedModal() {
+            document.getElementById('unassignedModal').classList.add('hidden');
+        }
+
+        // Close modals when clicking backdrop
+        document.getElementById('unassignedModal').addEventListener('click', (e) => {
+            if (e.target.id === 'unassignedModal') closeUnassignedModal();
+        });
+        document.getElementById('editModal').addEventListener('click', (e) => {
+            if (e.target.id === 'editModal') closeModal();
+        });
+
+        function copyUnassignedInfo(email) {
+            navigator.clipboard.writeText(email);
+            alert('Email copied: ' + email);
+        }
+
+        function populateUnassignedDropdown() {
+            const select = document.getElementById('selectUnassigned');
+            select.innerHTML = '<option value="">-- Select an unassigned employee --</option>';
+            unassignedStaff.forEach(s => {
+                select.innerHTML += `<option value="${s.email}">${s.first_name} ${s.last_name} - ${s.location} (${s.job_title || 'No title'})</option>`;
+            });
+        }
+
+        function populateFromHR() {
+            const email = document.getElementById('selectUnassigned').value;
+            if (!email) return;
+
+            const staff = unassignedStaff.find(s => s.email === email);
+            if (staff) {
+                document.getElementById('editEmployee25').value = `${staff.first_name} ${staff.last_name}`;
+                document.getElementById('editEmail').value = staff.email || '';
+                document.getElementById('editEmployeeNumber').value = staff.employee_id || '';
+                document.getElementById('editStatus25').value = 'Active';
+            }
+        }
+    </script>
+</body>
+</html>
