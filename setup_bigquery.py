@@ -42,6 +42,8 @@ def load_positions_to_bigquery(json_file_path: str):
         bigquery.SchemaField("itr_response", "STRING"),
         bigquery.SchemaField("notes", "STRING"),
         bigquery.SchemaField("candidate_name", "STRING"),
+        bigquery.SchemaField("start_year", "STRING"),
+        bigquery.SchemaField("end_year", "STRING"),
         bigquery.SchemaField("created_at", "TIMESTAMP"),
         bigquery.SchemaField("updated_at", "TIMESTAMP"),
         bigquery.SchemaField("updated_by", "STRING"),
@@ -93,6 +95,8 @@ def load_positions_to_bigquery(json_file_path: str):
             "itr_response": item.get("ITR Response", ""),
             "notes": "",
             "candidate_name": "",
+            "start_year": "25-26",
+            "end_year": None,
             "created_at": now,
             "updated_at": now,
             "updated_by": "system",
@@ -156,6 +160,63 @@ def add_candidate_name_column():
 
     except Exception as e:
         print(f"Error adding column: {e}")
+        return False
+
+
+def add_year_range_columns():
+    """
+    Add start_year and end_year columns to position_control table.
+    This enables tracking which school years a position applies to.
+    - start_year: When the position was created (e.g., "25-26")
+    - end_year: When the position ends (NULL = ongoing)
+    """
+    client = bigquery.Client(project=PROJECT_ID)
+    table_id = f"{PROJECT_ID}.{DATASET_ID}.{POSITION_TABLE}"
+
+    try:
+        table = client.get_table(table_id)
+        original_schema = list(table.schema)
+
+        # Check which columns need to be added
+        existing_fields = {field.name for field in original_schema}
+        new_fields = []
+
+        if "start_year" not in existing_fields:
+            new_fields.append(bigquery.SchemaField("start_year", "STRING"))
+            print("Will add start_year column")
+        else:
+            print("start_year column already exists")
+
+        if "end_year" not in existing_fields:
+            new_fields.append(bigquery.SchemaField("end_year", "STRING"))
+            print("Will add end_year column")
+        else:
+            print("end_year column already exists")
+
+        if not new_fields:
+            print("All year columns already exist")
+            return True
+
+        # Add new columns
+        new_schema = original_schema + new_fields
+        table.schema = new_schema
+        client.update_table(table, ["schema"])
+        print(f"Added year columns to {table_id}")
+
+        # Set default values for existing positions
+        # All existing positions started in 25-26 and are ongoing (end_year = NULL)
+        update_query = f"""
+            UPDATE `{table_id}`
+            SET start_year = '25-26'
+            WHERE start_year IS NULL
+        """
+        client.query(update_query).result()
+        print("Set default start_year='25-26' for existing positions")
+
+        return True
+
+    except Exception as e:
+        print(f"Error adding year columns: {e}")
         return False
 
 

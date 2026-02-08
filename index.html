@@ -308,46 +308,55 @@
             </div>
             <form id="positionForm" onsubmit="savePosition(event)" class="p-6">
                 <input type="hidden" id="editPositionId">
+                <div class="mb-4">
+                    <label class="form-label">School</label>
+                    <select id="editSchool" class="form-input" required>
+                        <option value="Arthur Ashe">Arthur Ashe</option>
+                        <option value="Samuel J Green">Samuel J Green</option>
+                        <option value="Langston Hughes">Langston Hughes</option>
+                        <option value="Phillis Wheatley">Phillis Wheatley</option>
+                        <option value="Network">Network</option>
+                    </select>
+                </div>
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
-                        <label class="form-label">School</label>
-                        <select id="editSchool" class="form-input" required>
-                            <option value="Arthur Ashe">Arthur Ashe</option>
-                            <option value="Samuel J Green">Samuel J Green</option>
-                            <option value="Langston Hughes">Langston Hughes</option>
-                            <option value="Phillis Wheatley">Phillis Wheatley</option>
-                            <option value="Network">Network</option>
-                        </select>
+                        <label class="form-label">Job Title</label>
+                        <input type="text" id="editTitle" class="form-input" list="jobTitleList" required onchange="onJobTitleChange()" oninput="onJobTitleChange()">
+                        <datalist id="jobTitleList"></datalist>
                     </div>
                     <div>
-                        <label class="form-label">Category</label>
+                        <label class="form-label">Category <span class="text-xs text-slate-400 font-normal">(auto from Job Title)</span></label>
                         <select id="editCategory" class="form-input" required>
                             <option value="Leadership">Leadership</option>
                             <option value="Teacher">Teacher</option>
                             <option value="Support">Support</option>
                             <option value="Operations">Operations</option>
+                            <option value="Network">Network</option>
                         </select>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
-                        <label class="form-label">Job Title</label>
-                        <input type="text" id="editTitle" class="form-input" required>
+                        <label class="form-label">Subject</label>
+                        <input type="text" id="editSubject" class="form-input" list="subjectList">
+                        <datalist id="subjectList"></datalist>
                     </div>
                     <div>
-                        <label class="form-label">Subject</label>
-                        <input type="text" id="editSubject" class="form-input">
+                        <label class="form-label">Grade Level</label>
+                        <input type="text" id="editGrade" class="form-input" list="gradeLevelList">
+                        <datalist id="gradeLevelList"></datalist>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
-                        <label class="form-label">Grade Level</label>
-                        <input type="text" id="editGrade" class="form-input">
-                    </div>
-                    <div>
                         <label class="form-label">Staffing Matrix</label>
                         <input type="text" id="editMatrix" class="form-input">
                     </div>
+                    <div></div>
+                </div>
+                <div id="hrisWarning" class="hidden mb-4 p-3 bg-red-50 rounded-lg border border-red-200">
+                    <p class="text-sm text-red-700 font-medium">⚠️ Position needs to be added in HRIS</p>
+                    <p class="text-xs text-red-600">This job title is not in the HR system. Please add it in UKG before proceeding.</p>
                 </div>
                 <div class="mb-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                     <label class="form-label text-yellow-700">Candidate (Pre-Hire)</label>
@@ -421,6 +430,31 @@
                         </select>
                     </div>
                 </div>
+                <div class="grid grid-cols-2 gap-4 mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                    <div>
+                        <label class="form-label">Position Start Year</label>
+                        <select id="editStartYear" class="form-input">
+                            <option value="25-26">25-26</option>
+                            <option value="26-27">26-27</option>
+                            <option value="27-28">27-28</option>
+                            <option value="28-29">28-29</option>
+                            <option value="29-30">29-30</option>
+                        </select>
+                        <p class="text-xs text-slate-500 mt-1">When this position was created</p>
+                    </div>
+                    <div>
+                        <label class="form-label">Position End Year</label>
+                        <select id="editEndYear" class="form-input">
+                            <option value="">Ongoing (no end)</option>
+                            <option value="25-26">25-26</option>
+                            <option value="26-27">26-27</option>
+                            <option value="27-28">27-28</option>
+                            <option value="28-29">28-29</option>
+                            <option value="29-30">29-30</option>
+                        </select>
+                        <p class="text-xs text-slate-500 mt-1">Leave blank if position continues</p>
+                    </div>
+                </div>
                 <div class="mb-4">
                     <label class="form-label">Notes</label>
                     <textarea id="editNotes" class="form-input" rows="2"></textarea>
@@ -446,6 +480,7 @@
         let filterOptions = {};
         let hiringSummary = [];
         let unassignedStaff = [];
+        let jobOptions = { job_titles: [], job_function_map: {}, subjects: [], grade_levels: [], categories: [] };
         let sortCol = null;
         let sortDir = 'asc';
         let searchTimeout = null;
@@ -496,9 +531,10 @@
 
         async function loadData() {
             try {
-                const [posRes, statsRes, schoolRes, filterRes, summaryRes, unassignedRes] = await Promise.all([
+                const [posRes, statsRes, schoolRes, filterRes, summaryRes, unassignedRes, jobRes] = await Promise.all([
                     fetch('/api/positions'), fetch('/api/positions/stats'), fetch('/api/positions/by-school'),
-                    fetch('/api/positions/filter-options'), fetch('/api/hiring-summary'), fetch('/api/unassigned-staff')
+                    fetch('/api/positions/filter-options'), fetch('/api/hiring-summary'), fetch('/api/unassigned-staff'),
+                    fetch('/api/job-options')
                 ]);
                 positions = await posRes.json();
                 stats = await statsRes.json();
@@ -507,6 +543,8 @@
                 hiringSummary = await summaryRes.json();
                 const unassignedData = await unassignedRes.json();
                 unassignedStaff = unassignedData.staff || [];
+                jobOptions = await jobRes.json();
+                populateJobDataLists();
                 filteredPositions = [...positions];
                 populateFilters();
                 renderSummary();
@@ -976,7 +1014,10 @@
             document.getElementById('positionForm').reset();
             document.getElementById('editCandidateName').value = '';
             document.getElementById('editEmployeeNumber').value = '';
+            document.getElementById('editStartYear').value = '26-27';  // Default new positions to next year
+            document.getElementById('editEndYear').value = '';  // Ongoing by default
             document.getElementById('deleteBtn').classList.add('hidden');
+            document.getElementById('hrisWarning').classList.add('hidden');  // Hide HRIS warning
             populateUnassignedDropdown();
             document.getElementById('editModal').classList.remove('hidden');
         }
@@ -1002,9 +1043,12 @@
                 document.getElementById('editEmployee26').value = p.employee_26_27 || '';
                 document.getElementById('editItr').value = p.itr_response || '';
                 document.getElementById('editNotes').value = p.notes || '';
+                document.getElementById('editStartYear').value = p.start_year || '25-26';
+                document.getElementById('editEndYear').value = p.end_year || '';
                 document.getElementById('deleteBtn').classList.remove('hidden');
                 populateUnassignedDropdown();
                 document.getElementById('selectUnassigned').value = '';
+                onJobTitleChange();  // Check if job title is in HRIS
                 document.getElementById('editModal').classList.remove('hidden');
             } catch (e) { alert('Error loading position'); }
         }
@@ -1030,6 +1074,8 @@
                 employee_26_27: document.getElementById('editEmployee26').value,
                 itr_response: document.getElementById('editItr').value,
                 notes: document.getElementById('editNotes').value,
+                start_year: document.getElementById('editStartYear').value,
+                end_year: document.getElementById('editEndYear').value || null,
             };
             try {
                 const res = await fetch(id ? `/api/positions/${id}` : '/api/positions', {
@@ -1100,6 +1146,40 @@
         function copyUnassignedInfo(email) {
             navigator.clipboard.writeText(email);
             alert('Email copied: ' + email);
+        }
+
+        function populateJobDataLists() {
+            // Populate Job Title datalist
+            const jobTitleList = document.getElementById('jobTitleList');
+            jobTitleList.innerHTML = jobOptions.job_titles.map(t => `<option value="${t}">`).join('');
+
+            // Populate Subject datalist
+            const subjectList = document.getElementById('subjectList');
+            subjectList.innerHTML = jobOptions.subjects.map(s => `<option value="${s}">`).join('');
+
+            // Populate Grade Level datalist
+            const gradeLevelList = document.getElementById('gradeLevelList');
+            gradeLevelList.innerHTML = jobOptions.grade_levels.map(g => `<option value="${g}">`).join('');
+        }
+
+        function onJobTitleChange() {
+            const title = document.getElementById('editTitle').value;
+            const warning = document.getElementById('hrisWarning');
+
+            // Check if title exists in HR system
+            if (title && jobOptions.job_titles.includes(title)) {
+                // Auto-populate category from job function
+                const jobFunction = jobOptions.job_function_map[title];
+                if (jobFunction) {
+                    document.getElementById('editCategory').value = jobFunction;
+                }
+                warning.classList.add('hidden');
+            } else if (title) {
+                // Show warning for custom job title
+                warning.classList.remove('hidden');
+            } else {
+                warning.classList.add('hidden');
+            }
         }
 
         function populateUnassignedDropdown() {

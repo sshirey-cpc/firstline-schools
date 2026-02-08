@@ -53,6 +53,18 @@ if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET:
 
 HTML_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# Valid school years for dropdowns
+SCHOOL_YEARS = ['25-26', '26-27', '27-28', '28-29', '29-30']
+
+
+def year_filter_sql(year: str, start_col: str = "start_year", end_col: str = "end_year") -> str:
+    """
+    Generate SQL WHERE clause to filter positions by school year.
+    A position applies to a year if it started on or before that year
+    and either hasn't ended or ends on or after that year.
+    """
+    return f"({start_col} <= '{year}' AND ({end_col} >= '{year}' OR {end_col} IS NULL))"
+
 
 def login_required(f):
     """Decorator to require authentication."""
@@ -225,6 +237,8 @@ def get_positions():
                 p.status_26_27,
                 p.itr_response,
                 p.notes,
+                p.start_year,
+                p.end_year,
                 -- HR data
                 CASE
                     WHEN sml.Employment_Status IS NOT NULL THEN sml.Employment_Status
@@ -301,7 +315,15 @@ def get_position_stats():
     if not bq_client:
         return jsonify({'error': 'BigQuery client not initialized'}), 500
 
+    # Optional year filter - defaults to showing all
+    year = request.args.get('year', '')
+
     try:
+        # Build year filter clause
+        year_clause = ""
+        if year:
+            year_clause = f"WHERE {year_filter_sql(year)}"
+
         query = f"""
             SELECT
                 COUNTIF(current_status NOT IN ('Not Filling Seat', 'Overhire')) as total,
@@ -322,6 +344,7 @@ def get_position_stats():
                 COUNTIF(itr_response = 'New hire' OR itr_response = 'New Hire') as itr_new_hire,
                 COUNTIF(itr_response = 'Leave') as itr_leave
             FROM `{PROJECT_ID}.{DATASET_ID}.{POSITION_TABLE}`
+            {year_clause}
         """
 
         results = bq_client.query(query).result()
@@ -342,7 +365,15 @@ def get_positions_by_school():
     if not bq_client:
         return jsonify({'error': 'BigQuery client not initialized'}), 500
 
+    # Optional year filter
+    year = request.args.get('year', '')
+
     try:
+        # Build year filter clause
+        year_clause = ""
+        if year:
+            year_clause = f"WHERE {year_filter_sql(year)}"
+
         query = f"""
             SELECT
                 school,
@@ -375,6 +406,7 @@ def get_positions_by_school():
                 COUNTIF(job_category = 'Operations' AND current_status = 'Filled') as operations_onboarding,
                 COUNTIF(job_category = 'Operations' AND current_status IN ('Open', 'Finalist')) as operations_open
             FROM `{PROJECT_ID}.{DATASET_ID}.{POSITION_TABLE}`
+            {year_clause}
             GROUP BY school
             ORDER BY school
         """
@@ -394,6 +426,64 @@ def get_positions_by_school():
 
     except Exception as e:
         logger.error(f"Error fetching positions by school: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/job-options')
+@login_required
+def get_job_options():
+    """
+    Get job titles, subjects, and grade levels from HR system for dropdowns.
+    Includes Job Function mapping for auto-populating Category.
+    """
+    if not bq_client:
+        return jsonify({'error': 'BigQuery client not initialized'}), 500
+
+    try:
+        # Get job titles with their job functions
+        job_query = f"""
+            SELECT DISTINCT Job_Title, Job_Function
+            FROM `{PROJECT_ID}.{DATASET_ID}.staff_master_list_with_function`
+            WHERE Job_Title IS NOT NULL AND Job_Title != ''
+            ORDER BY Job_Title
+        """
+        job_results = bq_client.query(job_query).result()
+        job_titles = []
+        job_function_map = {}
+        for row in job_results:
+            job_titles.append(row.Job_Title)
+            job_function_map[row.Job_Title] = row.Job_Function or ''
+
+        # Get subjects
+        subject_query = f"""
+            SELECT DISTINCT Subject_Desc
+            FROM `{PROJECT_ID}.{DATASET_ID}.staff_master_list_with_function`
+            WHERE Subject_Desc IS NOT NULL AND Subject_Desc != ''
+            ORDER BY Subject_Desc
+        """
+        subject_results = bq_client.query(subject_query).result()
+        subjects = [row.Subject_Desc for row in subject_results]
+
+        # Get grade levels
+        grade_query = f"""
+            SELECT DISTINCT Grade_Level_Desc
+            FROM `{PROJECT_ID}.{DATASET_ID}.staff_master_list_with_function`
+            WHERE Grade_Level_Desc IS NOT NULL AND Grade_Level_Desc != ''
+            ORDER BY Grade_Level_Desc
+        """
+        grade_results = bq_client.query(grade_query).result()
+        grade_levels = [row.Grade_Level_Desc for row in grade_results]
+
+        return jsonify({
+            'job_titles': job_titles,
+            'job_function_map': job_function_map,
+            'subjects': subjects,
+            'grade_levels': grade_levels,
+            'categories': ['Leadership', 'Teacher', 'Support', 'Operations', 'Network']
+        })
+
+    except Exception as e:
+        logger.error(f"Error fetching job options: {e}")
         return jsonify({'error': str(e)}), 500
 
 
@@ -446,7 +536,8 @@ def get_filter_options():
             'statuses': sorted(list(statuses)),
             'statuses_26': sorted(list(statuses_26)),
             'itr_responses': sorted(list(itr_responses)),
-            'matrices': sorted(list(matrices))
+            'matrices': sorted(list(matrices)),
+            'school_years': SCHOOL_YEARS
         })
 
     except Exception as e:
@@ -462,6 +553,7 @@ def get_action_needed():
         return jsonify({'error': 'BigQuery client not initialized'}), 500
 
     try:
+        # Only show positions that apply to 26-27
         query = f"""
             SELECT
                 school,
@@ -475,6 +567,7 @@ def get_action_needed():
                 itr_response
             FROM `{PROJECT_ID}.{DATASET_ID}.{POSITION_TABLE}`
             WHERE status_26_27 IN ('Open', 'Possible Open')
+                AND {year_filter_sql('26-27')}
             ORDER BY
                 CASE WHEN status_26_27 = 'Open' THEN 0 ELSE 1 END,
                 school,
@@ -646,7 +739,8 @@ def update_position(position_id):
             'school', 'job_category', 'job_title', 'subject', 'grade_level',
             'staffing_matrix', 'current_status', 'first_name', 'last_name',
             'employee_25_26', 'email_address', 'employee_number', 'validation',
-            'employee_26_27', 'status_26_27', 'itr_response', 'notes', 'candidate_name'
+            'employee_26_27', 'status_26_27', 'itr_response', 'notes', 'candidate_name',
+            'start_year', 'end_year'
         ]
 
         updates = []
@@ -747,6 +841,8 @@ def create_position():
             "itr_response": data.get("itr_response", ""),
             "notes": data.get("notes", ""),
             "candidate_name": data.get("candidate_name", ""),
+            "start_year": data.get("start_year", "25-26"),
+            "end_year": data.get("end_year", None),
             "created_at": now,
             "updated_at": now,
             "updated_by": user_email,
@@ -942,6 +1038,7 @@ def get_hiring_summary():
                 COUNTIF(status_26_27 = 'Filled') as hired_to_date
             FROM `{PROJECT_ID}.{DATASET_ID}.{POSITION_TABLE}`
             WHERE school IN UNNEST(@schools)
+                AND {year_filter_sql('26-27')}
             GROUP BY school, job_category
         """
 

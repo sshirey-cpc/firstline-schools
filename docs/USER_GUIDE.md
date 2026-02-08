@@ -137,6 +137,7 @@ Positions are compared against the HR system (staff_master_list). Flag indicator
    - 26-27 Employee
    - ITR Response
    - Notes
+   - **Start Year, End Year** (position lifecycle)
 3. **Assign from HR** - Dropdown to select from unassigned staff (auto-fills name, email, EID)
 4. **Clear Employee** - Click ✕ to mark position as vacant
 
@@ -151,6 +152,30 @@ Positions are compared against the HR system (staff_master_list). Flag indicator
 1. Click a position row to open edit modal
 2. Click **"Delete Position"** (red button)
 3. Confirm deletion
+
+### Position Lifecycle (Start/End Year)
+
+Each position has a lifecycle defined by **Start Year** and **End Year**:
+
+| Field | Purpose |
+|-------|---------|
+| **Start Year** | When the position was created (e.g., "25-26") |
+| **End Year** | When the position ends (blank = ongoing) |
+
+**Use Cases:**
+
+| Scenario | Start Year | End Year |
+|----------|------------|----------|
+| Existing ongoing position | 25-26 | *(blank)* |
+| New position for 26-27 | 26-27 | *(blank)* |
+| Position ending after 25-26 | 25-26 | 25-26 |
+| Temporary position (one year only) | 26-27 | 26-27 |
+
+**How it works:**
+- Positions only appear in views for their applicable years
+- A position with Start Year "26-27" won't show in 25-26 totals
+- A position with End Year "25-26" won't show in 26-27 totals
+- This scales automatically - no changes needed when 27-28 arrives
 
 ---
 
