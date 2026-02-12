@@ -4,16 +4,43 @@ Intent to Return Dashboard - Dynamic Flask App
 Provides real-time ITR data with year-over-year comparison.
 """
 
-from flask import Flask, jsonify, send_file
+from functools import wraps
+from flask import Flask, jsonify, send_file, redirect, url_for, session, request
 from google.cloud import bigquery
+from authlib.integrations.flask_client import OAuth
+from werkzeug.middleware.proxy_fix import ProxyFix
 import logging
 import os
+import secrets
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
+# Session configuration
+app.secret_key = os.environ.get('SECRET_KEY') or os.environ.get('FLASK_SECRET_KEY') or secrets.token_hex(32)
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') != 'development'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 PROJECT_ID = "talent-demo-482004"
+ALLOWED_DOMAIN = 'firstlineschools.org'
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+DEV_MODE = os.environ.get('FLASK_ENV') == 'development' or not GOOGLE_CLIENT_ID
+DEV_USER_EMAIL = 'sshirey@firstlineschools.org'
+
+# OAuth setup
+oauth = OAuth(app)
+oauth.register(
+    name='google',
+    client_id=GOOGLE_CLIENT_ID,
+    client_secret=GOOGLE_CLIENT_SECRET,
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={'scope': 'openid email profile'},
+)
 
 # Initialize BigQuery client
 try:
@@ -22,6 +49,16 @@ try:
 except Exception as e:
     logger.error(f"Failed to initialize BigQuery client: {e}")
     client = None
+
+
+def login_required(f):
+    """Decorator to require authentication on routes."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'user' not in session:
+            return jsonify({'error': 'Authentication required'}), 401
+        return f(*args, **kwargs)
+    return decorated
 
 # Site name mapping between years
 SITE_MAPPING = {
@@ -48,7 +85,61 @@ def index():
     return send_file('index.html')
 
 
+@app.route('/login')
+def login():
+    """Initiate Google OAuth flow."""
+    if DEV_MODE:
+        logger.info(f"DEV MODE: Auto-authenticating as {DEV_USER_EMAIL}")
+        session['user'] = {'email': DEV_USER_EMAIL, 'name': 'Dev User'}
+        return redirect('/')
+    google = oauth.create_client('google')
+    redirect_uri = url_for('auth_callback', _external=True)
+    return google.authorize_redirect(redirect_uri)
+
+
+@app.route('/auth/callback')
+def auth_callback():
+    """Handle OAuth callback from Google."""
+    try:
+        google = oauth.create_client('google')
+        token = google.authorize_access_token()
+        userinfo = token.get('userinfo')
+        if not userinfo:
+            return redirect('/?error=auth_failed')
+        email = userinfo.get('email', '')
+        domain = email.split('@')[-1] if '@' in email else ''
+        if domain.lower() != ALLOWED_DOMAIN.lower():
+            logger.warning(f"Unauthorized domain attempt: {email}")
+            return redirect(f'/?error=unauthorized_domain&domain={domain}')
+        session['user'] = {
+            'email': email,
+            'name': userinfo.get('name', ''),
+            'picture': userinfo.get('picture', ''),
+        }
+        logger.info(f"User authenticated: {email}")
+        return redirect('/')
+    except Exception as e:
+        logger.error(f"OAuth callback error: {e}")
+        return redirect('/?error=auth_failed')
+
+
+@app.route('/logout')
+def logout():
+    """Clear session and log out user."""
+    session.clear()
+    return redirect('/')
+
+
+@app.route('/api/auth/status')
+def auth_status():
+    """Return current authentication status."""
+    if 'user' in session:
+        return jsonify({'authenticated': True, 'user': session['user']})
+    return jsonify({'authenticated': False, 'user': None})
+
+
 @app.route('/api/current-year')
+@login_required
 def get_current_year():
     """Get current year (2025-26) ITR data."""
     if not client:
@@ -232,6 +323,7 @@ def get_current_year():
 
 
 @app.route('/api/last-year')
+@login_required
 def get_last_year():
     """Get last year (2024-25) ITR data."""
     if not client:
@@ -349,6 +441,7 @@ def get_last_year():
 
 
 @app.route('/api/analysis')
+@login_required
 def get_analysis():
     """Get detailed analysis comparing both years."""
     if not client:
@@ -449,6 +542,7 @@ def get_analysis():
 
 
 @app.route('/api/key-factors')
+@login_required
 def get_key_factors():
     """Get decision factors and open-ended response analysis."""
     if not client:
