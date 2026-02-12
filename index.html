@@ -395,8 +395,9 @@
                         <select id="editStatus25" class="form-input">
                             <option value="Active">Active</option>
                             <option value="Open">Open</option>
-                            <option value="Overhire">Overhire</option>
+                            <option value="Finalist">Finalist</option>
                             <option value="Filled">Filled</option>
+                            <option value="Overhire">Overhire</option>
                             <option value="Not Filling Seat">Not Filling Seat</option>
                         </select>
                     </div>
@@ -406,6 +407,8 @@
                             <option value="Return">Return</option>
                             <option value="Possible Open">Possible Open</option>
                             <option value="Open">Open</option>
+                            <option value="Finalist">Finalist</option>
+                            <option value="Offer Out">Offer Out</option>
                             <option value="Filled">Filled</option>
                             <option value="Seat Change">Seat Change</option>
                         </select>
@@ -495,6 +498,8 @@
             'Return': { bg: 'bg-green-100', text: 'text-green-700', dot: 'bg-green-500' },
             'Possible Open': { bg: 'bg-yellow-100', text: 'text-yellow-700', dot: 'bg-yellow-500' },
             'Open': { bg: 'bg-red-100', text: 'text-red-700', dot: 'bg-red-500' },
+            'Finalist': { bg: 'bg-cyan-100', text: 'text-cyan-700', dot: 'bg-cyan-500' },
+            'Offer Out': { bg: 'bg-indigo-100', text: 'text-indigo-700', dot: 'bg-indigo-500' },
             'Filled': { bg: 'bg-purple-100', text: 'text-purple-700', dot: 'bg-purple-500' },
         };
         const ITR_COLORS = {
@@ -552,7 +557,8 @@
                 renderUnassignedBadge();
                 applyFilters();
                 document.getElementById('loadingState').classList.add('hidden');
-                setView('overview');
+                // Preserve current view on reload, default to overview on first load
+                setView(currentView || 'overview');
             } catch (e) {
                 document.getElementById('loadingState').innerHTML = `<div class="text-center text-red-600"><p>Failed to load: ${e.message}</p></div>`;
             }
@@ -655,7 +661,7 @@
                     const posStatus = yearView === '25-26' ? p.current_status : p.status_26_27;
                     if (!selectedStatuses.includes(posStatus)) return false;
                 }
-                if (search && ![p.first_name, p.last_name, p.job_title, p.subject, p.school, p.employee_25_26].filter(Boolean).join(' ').toLowerCase().includes(search)) return false;
+                if (search && ![p.first_name, p.last_name, p.job_title, p.subject, p.school, p.employee_25_26, p.employee_26_27, p.candidate_name].filter(Boolean).join(' ').toLowerCase().includes(search)) return false;
                 // Mismatch filter
                 if (document.getElementById('filterMismatch').checked) {
                     const hasFlag = p.flag_not_in_hr || p.flag_status_mismatch || p.flag_subject_mismatch || p.flag_title_mismatch || p.flag_location_mismatch;
