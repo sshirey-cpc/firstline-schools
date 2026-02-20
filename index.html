@@ -1061,6 +1061,42 @@
 
         function closeModal() { document.getElementById('editModal').classList.add('hidden'); }
 
+        function saveFilterState() {
+            return {
+                school: document.getElementById('filterSchool').value,
+                category: document.getElementById('filterCategory').value,
+                search: document.getElementById('searchInput').value,
+                mismatch: document.getElementById('filterMismatch').checked,
+                statuses: [...selectedStatuses],
+                yearView: yearView,
+                view: currentView,
+                sort: sortCol,
+                sortDir: sortDir,
+            };
+        }
+
+        function restoreFilterState(state) {
+            document.getElementById('filterSchool').value = state.school;
+            document.getElementById('filterCategory').value = state.category;
+            document.getElementById('searchInput').value = state.search;
+            document.getElementById('filterMismatch').checked = state.mismatch;
+            selectedStatuses = state.statuses;
+            sortCol = state.sort;
+            sortDir = state.sortDir;
+            // Restore status checkboxes
+            const allCheckbox = document.querySelector('.statusCheckbox[value=""]');
+            const statusCheckboxes = document.querySelectorAll('.statusCheckbox:not([value=""])');
+            if (selectedStatuses.length === 0) {
+                allCheckbox.checked = true;
+                statusCheckboxes.forEach(cb => cb.checked = false);
+            } else {
+                allCheckbox.checked = false;
+                statusCheckboxes.forEach(cb => cb.checked = selectedStatuses.includes(cb.value));
+            }
+            updateStatusButtonText();
+            applyFilters();
+        }
+
         async function savePosition(e) {
             e.preventDefault();
             const id = document.getElementById('editPositionId').value;
@@ -1089,7 +1125,12 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                if (res.ok) { closeModal(); await loadData(); }
+                if (res.ok) {
+                    const filters = saveFilterState();
+                    closeModal();
+                    await loadData();
+                    restoreFilterState(filters);
+                }
                 else { const err = await res.json(); alert(err.error || 'Save failed'); }
             } catch (e) { alert('Error saving'); }
         }
@@ -1099,7 +1140,12 @@
             const id = document.getElementById('editPositionId').value;
             try {
                 const res = await fetch(`/api/positions/${id}`, { method: 'DELETE' });
-                if (res.ok) { closeModal(); await loadData(); }
+                if (res.ok) {
+                    const filters = saveFilterState();
+                    closeModal();
+                    await loadData();
+                    restoreFilterState(filters);
+                }
                 else { alert('Delete failed'); }
             } catch (e) { alert('Error deleting'); }
         }
