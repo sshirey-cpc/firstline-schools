@@ -15,7 +15,8 @@ from authlib.integrations.flask_client import OAuth
 from config import (
     SECRET_KEY, ALLOWED_ORIGINS, ALLOWED_DOMAIN,
     GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, DEV_MODE, DEV_USER_EMAIL,
-    ADMIN_EMAILS, PROJECT_ID, DATASET_ID, STAFF_TABLE, POSITION_TABLE, SITE_SCHOOLS
+    PROJECT_ID, DATASET_ID, STAFF_TABLE, POSITION_TABLE, SITE_SCHOOLS,
+    TALENT_TITLES, STAFFING_BOARD_C_TEAM_KEYWORDS, STAFFING_BOARD_TITLES
 )
 
 # Configure logging
@@ -53,6 +54,34 @@ if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET:
 
 HTML_DIR = os.path.dirname(os.path.abspath(__file__))
 
+
+@app.before_request
+def refresh_job_title():
+    """Refresh job title from BigQuery on every request so role changes take effect immediately."""
+    if 'user' not in session or not bq_client:
+        return
+    email = session['user'].get('email', '')
+    if not email:
+        return
+    try:
+        query = f"""
+            SELECT Job_Title
+            FROM `{PROJECT_ID}.{DATASET_ID}.staff_master_list_with_function`
+            WHERE LOWER(TRIM(Email_Address)) = @email
+            AND Employment_Status IN ('Active', 'Leave of absence')
+            LIMIT 1
+        """
+        params = [bigquery.ScalarQueryParameter("email", "STRING", email.lower())]
+        job_config = bigquery.QueryJobConfig(query_parameters=params)
+        rows = list(bq_client.query(query, job_config=job_config).result())
+        fresh_title = (rows[0].Job_Title or '').strip() if rows else ''
+        if fresh_title != session.get('job_title', ''):
+            session['job_title'] = fresh_title
+            session.modified = True
+    except Exception as e:
+        logger.error(f"Error refreshing job title for {email}: {e}")
+
+
 # Valid school years for dropdowns
 SCHOOL_YEARS = ['25-26', '26-27', '27-28', '28-29', '29-30']
 
@@ -67,7 +96,7 @@ def year_filter_sql(year: str, start_col: str = "start_year", end_col: str = "en
 
 
 def login_required(f):
-    """Decorator to require authentication."""
+    """Decorator to require authentication and Staffing Board access (by job title)."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if DEV_MODE:
@@ -81,23 +110,25 @@ def login_required(f):
 
         if 'user' not in session:
             return jsonify({'error': 'Authentication required'}), 401
+
+        job_title = session.get('job_title', '')
+        if not has_staffing_board_access(job_title):
+            return jsonify({'error': 'Staffing Board access required'}), 403
         return f(*args, **kwargs)
     return decorated_function
 
 
-def admin_required(f):
-    """Decorator to require admin access."""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if DEV_MODE:
-            return f(*args, **kwargs)
-
-        user = session.get('user', {})
-        email = user.get('email', '').lower()
-        if email not in [e.lower() for e in ADMIN_EMAILS]:
-            return jsonify({'error': 'Admin access required'}), 403
-        return f(*args, **kwargs)
-    return decorated_function
+def has_staffing_board_access(job_title):
+    """Check if a job title grants Staffing Board read access."""
+    if not job_title:
+        return False
+    title_lower = job_title.lower()
+    # C-Team keyword match (same pattern as salary dashboard)
+    for keyword in STAFFING_BOARD_C_TEAM_KEYWORDS:
+        if keyword.lower() in title_lower:
+            return True
+    # Explicit title match
+    return job_title in STAFFING_BOARD_TITLES
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -164,17 +195,46 @@ def auth_status():
                 'name': 'Dev User',
                 'picture': ''
             },
-            'isAdmin': True
+            'isAdmin': True,
+            'isTalent': True
         })
 
     user = session.get('user')
     if user:
         email = user.get('email', '').lower()
-        is_admin = email in [e.lower() for e in ADMIN_EMAILS]
+
+        # Look up job title to determine role-based access
+        is_talent = False
+        has_access = False
+        job_title = session.get('job_title', '')
+
+        # Cache job title in session to avoid repeated BigQuery lookups
+        if not job_title and bq_client:
+            try:
+                query = f"""
+                    SELECT Job_Title
+                    FROM `{PROJECT_ID}.{DATASET_ID}.staff_master_list_with_function`
+                    WHERE LOWER(TRIM(Email_Address)) = @email
+                    LIMIT 1
+                """
+                params = [bigquery.ScalarQueryParameter("email", "STRING", email)]
+                job_config = bigquery.QueryJobConfig(query_parameters=params)
+                rows = list(bq_client.query(query, job_config=job_config).result())
+                if rows:
+                    job_title = (rows[0].Job_Title or '').strip()
+                    session['job_title'] = job_title
+            except Exception as e:
+                logger.error(f"Error looking up job title: {e}")
+
+        if job_title:
+            is_talent = job_title in TALENT_TITLES
+            has_access = has_staffing_board_access(job_title)
+
         return jsonify({
             'authenticated': True,
             'user': user,
-            'isAdmin': is_admin
+            'hasAccess': has_access,
+            'isTalent': is_talent
         })
 
     return jsonify({'authenticated': False})

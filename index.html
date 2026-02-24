@@ -99,7 +99,8 @@
                             <button onclick="setView('summary')" id="tabSummary" class="segment-btn">26-27 Overview</button>
                             <button onclick="setView('positions')" id="tabPositions" class="segment-btn">All Positions</button>
                         </div>
-                        <button onclick="showAddModal()" class="bg-fls-orange hover:bg-fls-orange-dark text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">+ Add Position</button>
+                        <a href="https://position-control-form-965913991496.us-central1.run.app" target="_blank" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">Position Request Form</a>
+                        <button id="addPositionBtn" onclick="showAddModal()" class="bg-fls-orange hover:bg-fls-orange-dark text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">+ Add Position</button>
                         <button onclick="showUnassignedModal()" id="unassignedBadge" class="hidden bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">
                             <span id="unassignedCount">0</span> Unassigned
                         </button>
@@ -517,8 +518,24 @@
             try {
                 const res = await fetch('/api/auth/status');
                 const data = await res.json();
-                data.authenticated ? showDashboard(data.user) : showLogin();
+                if (!data.authenticated) { showLogin(); return; }
+                if (!data.hasAccess) { showAccessDenied(); return; }
+                showDashboard(data.user, data.isTalent);
             } catch (e) { showLogin(); }
+        }
+
+        function showAccessDenied() {
+            document.getElementById('authLoading').classList.add('hidden');
+            document.getElementById('googleSignInBtn').classList.add('hidden');
+            const container = document.querySelector('#loginScreen .bg-white');
+            container.innerHTML = `
+                <div class="text-center p-8">
+                    <img src="https://firstlineschools.org/wp-content/uploads/2020/08/FLS-Logo_v2019_Color.png" alt="FirstLine Schools" class="h-16 mx-auto mb-6">
+                    <h1 class="text-xl font-semibold text-fls-navy mb-2">Access Restricted</h1>
+                    <p class="text-slate-500 mb-4">Your role does not have access to the Staffing Board.</p>
+                    <a href="/logout" class="text-fls-orange hover:underline text-sm">Sign out</a>
+                </div>
+            `;
         }
 
         function showLogin() {
@@ -526,11 +543,12 @@
             document.getElementById('googleSignInBtn').classList.remove('hidden');
         }
 
-        async function showDashboard(user) {
+        async function showDashboard(user, isTalent) {
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('dashboardScreen').classList.remove('hidden');
             if (user.picture) { document.getElementById('userPic').src = user.picture; document.getElementById('userPic').classList.remove('hidden'); }
             if (user.name) { document.getElementById('userName').textContent = user.name; document.getElementById('userName').classList.remove('hidden'); }
+            if (!isTalent) { document.getElementById('addPositionBtn').classList.add('hidden'); }
             await loadData();
         }
 

@@ -20,14 +20,17 @@ GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
 DEV_MODE = os.environ.get('FLASK_ENV') == 'development' or not GOOGLE_CLIENT_ID
 DEV_USER_EMAIL = 'sshirey@firstlineschools.org'
 
-# Admin emails - users with full access
-ADMIN_EMAILS = [
-    'sshirey@firstlineschools.org',
-    'brichardson@firstlineschools.org',
-    'spence@firstlineschools.org',
-    'mtoussaint@firstlineschools.org',
-    'csmith@firstlineschools.org',
-    'aleibfritz@firstlineschools.org',
+# Staffing Board read access — by job title (looked up from BigQuery at login)
+# C-Team titles use a contains-match ("Chief" or "Ex. Dir"), same as salary dashboard
+STAFFING_BOARD_C_TEAM_KEYWORDS = ['Chief', 'Ex. Dir']
+# Additional titles that get read access beyond C-Team
+STAFFING_BOARD_TITLES = [
+    'School Director',
+    'Manager, HR',
+    'Manager Payroll',
+    'Manager Finance',
+    'Talent Ops Manager',
+    'Recruitment Manager',
 ]
 
 # BigQuery configuration
@@ -35,6 +38,14 @@ PROJECT_ID = 'talent-demo-482004'
 DATASET_ID = 'talent_grow_observations'
 STAFF_TABLE = 'supervisor_dashboard_data'
 POSITION_TABLE = 'position_control'
+
+# Talent team titles - users with these job titles can add positions
+TALENT_TITLES = [
+    'Chief People Officer',
+    'Chief Human Resources Officer',
+    'Talent Ops Manager',
+    'Recruitment Manager',
+]
 
 # School name mapping for display
 SITE_SCHOOLS = ['Arthur Ashe', 'Samuel J Green', 'Langston Hughes', 'Phillis Wheatley']
