@@ -220,7 +220,7 @@ def get_positions():
         query = f"""
             SELECT
                 p.position_id,
-                p.school,
+                TRIM(p.school) as school,
                 p.job_category,
                 p.job_title,
                 p.subject,
@@ -272,7 +272,7 @@ def get_positions():
             LEFT JOIN `{PROJECT_ID}.{DATASET_ID}.staff_master_list_with_function` sml
                 ON LOWER(TRIM(p.email_address)) = LOWER(TRIM(sml.Email_Address))
             WHERE 1=1
-                {"AND p.school = @school" if school_filter else ""}
+                {"AND TRIM(p.school) = @school" if school_filter else ""}
                 {"AND p.job_category = @category" if category_filter else ""}
                 {"AND p.current_status = @status" if status_filter else ""}
                 {"AND p.status_26_27 = @status26" if status26_filter else ""}
@@ -497,14 +497,14 @@ def get_filter_options():
     try:
         query = f"""
             SELECT DISTINCT
-                school,
+                TRIM(school) as school,
                 job_category,
                 current_status,
                 status_26_27,
                 itr_response,
                 staffing_matrix
             FROM `{PROJECT_ID}.{DATASET_ID}.{POSITION_TABLE}`
-            WHERE school IS NOT NULL
+            WHERE school IS NOT NULL AND TRIM(school) != ''
         """
 
         results = bq_client.query(query).result()
@@ -517,8 +517,8 @@ def get_filter_options():
         matrices = set()
 
         for row in results:
-            if row.school:
-                schools.add(row.school)
+            if row.school and row.school.strip():
+                schools.add(row.school.strip())
             if row.job_category:
                 categories.add(row.job_category)
             if row.current_status:
