@@ -30,7 +30,7 @@ STAFFING_BOARD_TITLES = [
     'Manager, HR',
     'Manager Payroll',
     'Manager Finance',
-    'Talent Ops Manager',
+    'Talent Operations Manager',
     'Recruitment Manager',
 ]
 
@@ -44,7 +44,7 @@ POSITION_TABLE = 'position_control'
 TALENT_TITLES = [
     'Chief People Officer',
     'Chief Human Resources Officer',
-    'Talent Ops Manager',
+    'Talent Operations Manager',
     'Recruitment Manager',
 ]
 
