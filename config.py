@@ -21,12 +21,11 @@ DEV_MODE = os.environ.get('FLASK_ENV') == 'development' or not GOOGLE_CLIENT_ID
 DEV_USER_EMAIL = 'sshirey@firstlineschools.org'
 
 # Staffing Board read access — by job title (looked up from BigQuery at login)
-# C-Team titles use a contains-match ("Chief" or "Ex. Dir"), same as salary dashboard
-STAFFING_BOARD_C_TEAM_KEYWORDS = ['Chief', 'Ex. Dir']
+# C-Team titles use a contains-match ("Chief" or "ExDir"), same as salary dashboard
+STAFFING_BOARD_C_TEAM_KEYWORDS = ['Chief', 'ExDir']
 # Additional titles that get read access beyond C-Team
 STAFFING_BOARD_TITLES = [
     'School Director',
-    'ExDir of Teach and Learn',
     'Manager, HR',
     'Manager Payroll',
     'Manager Finance',
