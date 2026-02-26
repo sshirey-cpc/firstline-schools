@@ -30,6 +30,7 @@ STAFFING_BOARD_TITLES = [
     'Manager, HR',
     'Manager Payroll',
     'Manager Finance',
+    'Manager - Benefits',
     'Talent Operations Manager',
     'Recruitment Manager',
 ]
