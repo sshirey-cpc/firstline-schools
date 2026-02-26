@@ -43,7 +43,7 @@ POSITION_TABLE = 'position_control'
 # Talent team titles - users with these job titles can add positions
 TALENT_TITLES = [
     'Chief People Officer',
-    'Chief Human Resources Officer',
+    'Chief HR Officer',
     'Talent Operations Manager',
     'Recruitment Manager',
 ]
