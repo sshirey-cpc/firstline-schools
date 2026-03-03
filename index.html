@@ -99,13 +99,10 @@
                             <button onclick="setView('summary')" id="tabSummary" class="segment-btn">26-27 Overview</button>
                             <button onclick="setView('positions')" id="tabPositions" class="segment-btn">All Positions</button>
                         </div>
-                        <a href="https://position-control-form-965913991496.us-central1.run.app" target="_blank" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">Position Request Form</a>
-                        <button id="addPositionBtn" onclick="showAddModal()" class="bg-fls-orange hover:bg-fls-orange-dark text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">+ Add Position</button>
-                        <button onclick="showUnassignedModal()" id="unassignedBadge" class="hidden bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">
+                        <a href="https://position-control-form-965913991496.us-central1.run.app" target="_blank" class="bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded-lg text-xs font-medium transition-colors">Position Request Form</a>
+                        <button id="addPositionBtn" onclick="showAddModal()" class="bg-fls-orange hover:bg-fls-orange-dark text-white px-2 py-1 rounded-lg text-xs font-medium transition-colors">+ Add Position</button>
+                        <button onclick="showUnassignedModal()" id="unassignedBadge" class="hidden bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded-lg text-xs font-medium transition-colors">
                             <span id="unassignedCount">0</span> Unassigned
-                        </button>
-                        <button onclick="showOnboardingMatches()" id="onboardingBadge" class="hidden bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">
-                            <span id="onboardingMatchCount">0</span> Ready to Link
                         </button>
                         <div class="flex items-center gap-2">
                             <img id="userPic" src="" alt="" class="w-8 h-8 rounded-full hidden">
@@ -286,7 +283,7 @@
                 <button onclick="closeUnassignedModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
             </div>
             <div class="p-6 max-h-[70vh] overflow-y-auto">
-                <p class="text-sm text-slate-500 mb-4">These employees are active in the HR system but not assigned to any position. Click a row to copy their info.</p>
+                <p class="text-sm text-slate-500 mb-4">These employees are active in the HR system but not assigned to any position on the Staffing Board.</p>
                 <table class="w-full text-sm">
                     <thead class="bg-slate-50">
                         <tr>
@@ -295,35 +292,10 @@
                             <th class="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase">Location</th>
                             <th class="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase">Job Title</th>
                             <th class="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase">Email</th>
-                        </tr>
-                    </thead>
-                    <tbody id="unassignedTableBody"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Onboarding Matches Modal -->
-    <div id="onboardingModal" class="modal-backdrop hidden">
-        <div class="modal" style="max-width: 850px;">
-            <div class="flex justify-between items-center px-6 py-4 border-b">
-                <h3 class="text-lg font-bold text-slate-800">Ready to Link <span class="text-sm font-normal text-slate-500">(Filled positions with HRIS matches)</span></h3>
-                <button onclick="closeOnboardingModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
-            </div>
-            <div class="p-6 max-h-[70vh] overflow-y-auto">
-                <p class="text-sm text-slate-500 mb-4">These Filled positions have a name match with an Active employee in the HR system. Click "Review" to open the position and link the employee.</p>
-                <table class="w-full text-sm">
-                    <thead class="bg-slate-50">
-                        <tr>
-                            <th class="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase">Position</th>
-                            <th class="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase">School</th>
-                            <th class="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase">HRIS Match</th>
-                            <th class="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase">Email</th>
-                            <th class="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase">HRIS Title</th>
                             <th class="px-3 py-2 text-center text-xs font-bold text-slate-500 uppercase">Action</th>
                         </tr>
                     </thead>
-                    <tbody id="onboardingTableBody"></tbody>
+                    <tbody id="unassignedTableBody"></tbody>
                 </table>
             </div>
         </div>
@@ -605,7 +577,6 @@
                 renderSummary();
                 renderOverview();
                 renderUnassignedBadge();
-                renderOnboardingBadge();
                 applyFilters();
                 document.getElementById('loadingState').classList.add('hidden');
                 // Preserve current view on reload, default to overview on first load
@@ -1227,15 +1198,22 @@
 
         function showUnassignedModal() {
             const tbody = document.getElementById('unassignedTableBody');
-            tbody.innerHTML = unassignedStaff.map(s => `
-                <tr class="border-b border-slate-100 hover:bg-yellow-50 cursor-pointer" onclick="copyUnassignedInfo('${s.email}')">
+            tbody.innerHTML = unassignedStaff.map(s => {
+                const match = onboardingMatches.find(m => m.hr_email === s.email);
+                const rowClass = match ? 'border-b border-slate-100 hover:bg-green-50' : 'border-b border-slate-100 hover:bg-yellow-50';
+                const actionCell = match
+                    ? `<td class="px-3 py-2 text-center"><button onclick="event.stopPropagation(); reviewOnboardingMatch('${match.position_id}', '${match.hr_email}')" class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-xs font-medium">Link</button></td>`
+                    : `<td class="px-3 py-2 text-center text-slate-300">—</td>`;
+                return `
+                <tr class="${rowClass} cursor-pointer" onclick="copyUnassignedInfo('${s.email}')">
                     <td class="px-3 py-2 font-medium">${s.first_name} ${s.last_name}</td>
                     <td class="px-3 py-2 text-slate-500">${s.employee_id || '-'}</td>
                     <td class="px-3 py-2">${s.location || '-'}</td>
                     <td class="px-3 py-2">${s.job_title || '-'}</td>
                     <td class="px-3 py-2 text-slate-500">${s.email || '-'}</td>
-                </tr>
-            `).join('');
+                    ${actionCell}
+                </tr>`;
+            }).join('');
             document.getElementById('unassignedModal').classList.remove('hidden');
         }
 
@@ -1243,43 +1221,8 @@
             document.getElementById('unassignedModal').classList.add('hidden');
         }
 
-        function renderOnboardingBadge() {
-            const badge = document.getElementById('onboardingBadge');
-            const count = document.getElementById('onboardingMatchCount');
-            if (onboardingMatches.length > 0) {
-                count.textContent = onboardingMatches.length;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
-            }
-        }
-
-        function showOnboardingMatches() {
-            const tbody = document.getElementById('onboardingTableBody');
-            tbody.innerHTML = onboardingMatches.map(m => `
-                <tr class="border-b border-slate-100 hover:bg-green-50">
-                    <td class="px-3 py-2">
-                        <div class="font-medium">${m.position_name}</div>
-                        <div class="text-xs text-slate-400">${m.position_title}</div>
-                    </td>
-                    <td class="px-3 py-2 text-slate-600">${m.position_school}</td>
-                    <td class="px-3 py-2 font-medium text-green-700">${m.hr_name}</td>
-                    <td class="px-3 py-2 text-slate-500">${m.hr_email}</td>
-                    <td class="px-3 py-2 text-slate-500">${m.hr_title}</td>
-                    <td class="px-3 py-2 text-center">
-                        <button onclick="reviewOnboardingMatch('${m.position_id}', '${m.hr_email}')" class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-xs font-medium">Link</button>
-                    </td>
-                </tr>
-            `).join('');
-            document.getElementById('onboardingModal').classList.remove('hidden');
-        }
-
-        function closeOnboardingModal() {
-            document.getElementById('onboardingModal').classList.add('hidden');
-        }
-
         async function reviewOnboardingMatch(positionId, hrEmail) {
-            closeOnboardingModal();
+            closeUnassignedModal();
             await editPosition(positionId);
             // Auto-select the matched employee in the dropdown
             if (hrEmail) {
@@ -1294,9 +1237,6 @@
         // Close modals when clicking backdrop
         document.getElementById('unassignedModal').addEventListener('click', (e) => {
             if (e.target.id === 'unassignedModal') closeUnassignedModal();
-        });
-        document.getElementById('onboardingModal').addEventListener('click', (e) => {
-            if (e.target.id === 'onboardingModal') closeOnboardingModal();
         });
         document.getElementById('editModal').addEventListener('click', (e) => {
             if (e.target.id === 'editModal') closeModal();
