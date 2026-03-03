@@ -1108,7 +1108,7 @@ def get_onboarding_matches():
                 END as hr_location
             FROM `{PROJECT_ID}.{DATASET_ID}.{POSITION_TABLE}` p
             INNER JOIN `{PROJECT_ID}.{DATASET_ID}.staff_master_list_with_function` sml
-                ON LOWER(TRIM(p.employee_25_26)) = LOWER(TRIM(CONCAT(sml.First_Name, ' ', sml.Last_Name)))
+                ON LOWER(REGEXP_REPLACE(TRIM(p.employee_25_26), r'\\s+', ' ')) = LOWER(TRIM(CONCAT(sml.First_Name, ' ', sml.Last_Name)))
             LEFT JOIN `{PROJECT_ID}.{DATASET_ID}.{POSITION_TABLE}` p2
                 ON LOWER(TRIM(sml.Email_Address)) = LOWER(TRIM(p2.email_address))
             WHERE p.current_status = 'Filled'

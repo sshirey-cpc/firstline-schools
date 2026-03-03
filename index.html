@@ -1267,7 +1267,7 @@
                     <td class="px-3 py-2 text-slate-500">${m.hr_email}</td>
                     <td class="px-3 py-2 text-slate-500">${m.hr_title}</td>
                     <td class="px-3 py-2 text-center">
-                        <button onclick="reviewOnboardingMatch('${m.position_id}')" class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-xs font-medium">Review</button>
+                        <button onclick="reviewOnboardingMatch('${m.position_id}', '${m.hr_email}')" class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-xs font-medium">Link</button>
                     </td>
                 </tr>
             `).join('');
@@ -1278,9 +1278,17 @@
             document.getElementById('onboardingModal').classList.add('hidden');
         }
 
-        function reviewOnboardingMatch(positionId) {
+        async function reviewOnboardingMatch(positionId, hrEmail) {
             closeOnboardingModal();
-            editPosition(positionId);
+            await editPosition(positionId);
+            // Auto-select the matched employee in the dropdown
+            if (hrEmail) {
+                const select = document.getElementById('selectUnassigned');
+                if (select) {
+                    select.value = hrEmail;
+                    populateFromHR();
+                }
+            }
         }
 
         // Close modals when clicking backdrop
