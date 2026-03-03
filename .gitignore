@@ -17,3 +17,7 @@ Thumbs.db
 __pycache__/
 *.pyc
 venv/
+
+# Security - baseline patterns (added by infrastructure-audit)
+credentials.json
+*-key.json
