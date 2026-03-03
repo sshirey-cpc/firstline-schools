@@ -104,6 +104,9 @@
                         <button onclick="showUnassignedModal()" id="unassignedBadge" class="hidden bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">
                             <span id="unassignedCount">0</span> Unassigned
                         </button>
+                        <button onclick="showOnboardingMatches()" id="onboardingBadge" class="hidden bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">
+                            <span id="onboardingMatchCount">0</span> Ready to Link
+                        </button>
                         <div class="flex items-center gap-2">
                             <img id="userPic" src="" alt="" class="w-8 h-8 rounded-full hidden">
                             <span id="userName" class="text-sm text-white hidden"></span>
@@ -300,6 +303,32 @@
         </div>
     </div>
 
+    <!-- Onboarding Matches Modal -->
+    <div id="onboardingModal" class="modal-backdrop hidden">
+        <div class="modal" style="max-width: 850px;">
+            <div class="flex justify-between items-center px-6 py-4 border-b">
+                <h3 class="text-lg font-bold text-slate-800">Ready to Link <span class="text-sm font-normal text-slate-500">(Filled positions with HRIS matches)</span></h3>
+                <button onclick="closeOnboardingModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+            </div>
+            <div class="p-6 max-h-[70vh] overflow-y-auto">
+                <p class="text-sm text-slate-500 mb-4">These Filled positions have a name match with an Active employee in the HR system. Click "Review" to open the position and link the employee.</p>
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase">Position</th>
+                            <th class="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase">School</th>
+                            <th class="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase">HRIS Match</th>
+                            <th class="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase">Email</th>
+                            <th class="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase">HRIS Title</th>
+                            <th class="px-3 py-2 text-center text-xs font-bold text-slate-500 uppercase">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="onboardingTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- Edit Modal -->
     <div id="editModal" class="modal-backdrop hidden">
         <div class="modal">
@@ -484,6 +513,7 @@
         let filterOptions = {};
         let hiringSummary = [];
         let unassignedStaff = [];
+        let onboardingMatches = [];
         let jobOptions = { job_titles: [], job_function_map: {}, subjects: [], grade_levels: [], categories: [] };
         let sortCol = null;
         let sortDir = 'asc';
@@ -554,10 +584,10 @@
 
         async function loadData() {
             try {
-                const [posRes, statsRes, schoolRes, filterRes, summaryRes, unassignedRes, jobRes] = await Promise.all([
+                const [posRes, statsRes, schoolRes, filterRes, summaryRes, unassignedRes, jobRes, onboardingRes] = await Promise.all([
                     fetch('/api/positions'), fetch('/api/positions/stats'), fetch('/api/positions/by-school'),
                     fetch('/api/positions/filter-options'), fetch('/api/hiring-summary'), fetch('/api/unassigned-staff'),
-                    fetch('/api/job-options')
+                    fetch('/api/job-options'), fetch('/api/onboarding-matches')
                 ]);
                 positions = await posRes.json();
                 stats = await statsRes.json();
@@ -566,6 +596,8 @@
                 hiringSummary = await summaryRes.json();
                 const unassignedData = await unassignedRes.json();
                 unassignedStaff = unassignedData.staff || [];
+                const onboardingData = await onboardingRes.json();
+                onboardingMatches = onboardingData.matches || [];
                 jobOptions = await jobRes.json();
                 populateJobDataLists();
                 filteredPositions = [...positions];
@@ -573,6 +605,7 @@
                 renderSummary();
                 renderOverview();
                 renderUnassignedBadge();
+                renderOnboardingBadge();
                 applyFilters();
                 document.getElementById('loadingState').classList.add('hidden');
                 // Preserve current view on reload, default to overview on first load
@@ -1009,11 +1042,16 @@
                 if (p.flag_location_mismatch) flags.push({ icon: 'L', title: `Location mismatch: Position="${p.school}", HR="${p.hr_location}"`, color: 'bg-purple-500' });
 
                 const flagHtml = flags.length > 0
-                    ? flags.map(f => `<span class="inline-flex items-center justify-center w-5 h-5 ${f.color} text-white text-[9px] font-bold rounded cursor-help" title="${f.title}">${f.icon}</span>`).join('')
+                    ? `<div class="flex gap-0.5 justify-center flex-wrap">
+                        ${flags.map(f => `<span class="inline-flex items-center justify-center w-5 h-5 ${f.color} text-white text-[9px] font-bold rounded cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-slate-400" onclick="event.stopPropagation(); toggleFlagDetail(this)" data-detail="${f.title}">${f.icon}</span>`).join('')}
+                       </div>
+                       <div class="flag-detail hidden mt-1 text-[10px] text-left leading-tight max-w-[200px]">
+                        ${flags.map(f => `<div class="mb-0.5"><span class="inline-block w-4 h-4 ${f.color} text-white text-[8px] font-bold rounded text-center leading-4 mr-1">${f.icon}</span><span class="text-slate-600">${f.title}</span></div>`).join('')}
+                       </div>`
                     : '<span class="text-green-500">✓</span>';
 
                 return `<tr class="table-row ${flags.length > 0 ? 'bg-red-50/30' : (i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50')} border-b border-slate-100" onclick="editPosition('${p.position_id}')">
-                    <td class="px-2 py-3 text-center"><div class="flex gap-0.5 justify-center">${flagHtml}</div></td>
+                    <td class="px-2 py-3 text-center">${flagHtml}</td>
                     <td class="px-4 py-3 font-medium">${p.school || '-'}</td>
                     <td class="px-4 py-3">${p.job_category || '-'}</td>
                     <td class="px-4 py-3 font-semibold">${p.job_title || '-'}</td>
@@ -1205,9 +1243,52 @@
             document.getElementById('unassignedModal').classList.add('hidden');
         }
 
+        function renderOnboardingBadge() {
+            const badge = document.getElementById('onboardingBadge');
+            const count = document.getElementById('onboardingMatchCount');
+            if (onboardingMatches.length > 0) {
+                count.textContent = onboardingMatches.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function showOnboardingMatches() {
+            const tbody = document.getElementById('onboardingTableBody');
+            tbody.innerHTML = onboardingMatches.map(m => `
+                <tr class="border-b border-slate-100 hover:bg-green-50">
+                    <td class="px-3 py-2">
+                        <div class="font-medium">${m.position_name}</div>
+                        <div class="text-xs text-slate-400">${m.position_title}</div>
+                    </td>
+                    <td class="px-3 py-2 text-slate-600">${m.position_school}</td>
+                    <td class="px-3 py-2 font-medium text-green-700">${m.hr_name}</td>
+                    <td class="px-3 py-2 text-slate-500">${m.hr_email}</td>
+                    <td class="px-3 py-2 text-slate-500">${m.hr_title}</td>
+                    <td class="px-3 py-2 text-center">
+                        <button onclick="reviewOnboardingMatch('${m.position_id}')" class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-xs font-medium">Review</button>
+                    </td>
+                </tr>
+            `).join('');
+            document.getElementById('onboardingModal').classList.remove('hidden');
+        }
+
+        function closeOnboardingModal() {
+            document.getElementById('onboardingModal').classList.add('hidden');
+        }
+
+        function reviewOnboardingMatch(positionId) {
+            closeOnboardingModal();
+            editPosition(positionId);
+        }
+
         // Close modals when clicking backdrop
         document.getElementById('unassignedModal').addEventListener('click', (e) => {
             if (e.target.id === 'unassignedModal') closeUnassignedModal();
+        });
+        document.getElementById('onboardingModal').addEventListener('click', (e) => {
+            if (e.target.id === 'onboardingModal') closeOnboardingModal();
         });
         document.getElementById('editModal').addEventListener('click', (e) => {
             if (e.target.id === 'editModal') closeModal();
@@ -1249,6 +1330,14 @@
                 warning.classList.remove('hidden');
             } else {
                 warning.classList.add('hidden');
+            }
+        }
+
+        function toggleFlagDetail(el) {
+            const td = el.closest('td');
+            const detail = td.querySelector('.flag-detail');
+            if (detail) {
+                detail.classList.toggle('hidden');
             }
         }
 

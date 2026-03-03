@@ -1071,6 +1071,82 @@ def get_unassigned_staff():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Onboarding Matches (Filled positions with likely HRIS matches)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.route('/api/onboarding-matches')
+@login_required
+def get_onboarding_matches():
+    """
+    Find Filled positions where the employee name matches an Active, unassigned
+    HRIS employee. Returns suggestions for the talent team to review and link.
+    Name matching is used only as a suggestion — no automatic changes are made.
+    """
+    if not bq_client:
+        return jsonify({'error': 'BigQuery client not initialized'}), 500
+
+    try:
+        query = f"""
+            SELECT
+                p.position_id,
+                p.employee_25_26 as position_name,
+                p.school as position_school,
+                p.job_title as position_title,
+                sml.First_Name as hr_first_name,
+                sml.Last_Name as hr_last_name,
+                sml.Email_Address as hr_email,
+                sml.Employee_Number as hr_employee_id,
+                sml.Job_Title as hr_title,
+                CASE
+                    WHEN sml.Location_Name = 'Arthur Ashe Charter School' THEN 'Arthur Ashe'
+                    WHEN sml.Location_Name = 'Langston Hughes Academy' THEN 'Langston Hughes'
+                    WHEN sml.Location_Name = 'Phillis Wheatley Community School' THEN 'Phillis Wheatley'
+                    WHEN sml.Location_Name = 'Samuel J Green Charter School' THEN 'Samuel J Green'
+                    WHEN sml.Location_Name = 'FirstLine Network' THEN 'Network'
+                    WHEN sml.Location_Name LIKE 'FLS%' THEN 'Network'
+                    ELSE sml.Location_Name
+                END as hr_location
+            FROM `{PROJECT_ID}.{DATASET_ID}.{POSITION_TABLE}` p
+            INNER JOIN `{PROJECT_ID}.{DATASET_ID}.staff_master_list_with_function` sml
+                ON LOWER(TRIM(p.employee_25_26)) = LOWER(TRIM(CONCAT(sml.First_Name, ' ', sml.Last_Name)))
+            LEFT JOIN `{PROJECT_ID}.{DATASET_ID}.{POSITION_TABLE}` p2
+                ON LOWER(TRIM(sml.Email_Address)) = LOWER(TRIM(p2.email_address))
+            WHERE p.current_status = 'Filled'
+                AND p.employee_25_26 IS NOT NULL
+                AND p.employee_25_26 != ''
+                AND sml.Employment_Status = 'Active'
+                AND p2.position_id IS NULL
+            ORDER BY p.school, p.employee_25_26
+        """
+
+        results = bq_client.query(query).result()
+
+        matches = []
+        for row in results:
+            matches.append({
+                'position_id': row.position_id,
+                'position_name': row.position_name,
+                'position_school': row.position_school,
+                'position_title': row.position_title,
+                'hr_name': f"{row.hr_first_name} {row.hr_last_name}",
+                'hr_email': row.hr_email,
+                'hr_employee_id': row.hr_employee_id,
+                'hr_title': row.hr_title,
+                'hr_location': row.hr_location,
+            })
+
+        logger.info(f"Found {len(matches)} onboarding matches")
+        return jsonify({
+            'count': len(matches),
+            'matches': matches
+        })
+
+    except Exception as e:
+        logger.error(f"Error fetching onboarding matches: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Hiring Summary
 # ─────────────────────────────────────────────────────────────────────────────
 
