@@ -1028,7 +1028,7 @@ def get_unassigned_staff():
     try:
         query = f"""
             SELECT
-                sml.Employee_ID as employee_id,
+                sml.Employee_Number as employee_id,
                 sml.first_name,
                 sml.last_name,
                 sml.Email_Address as email,
