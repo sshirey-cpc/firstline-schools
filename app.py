@@ -294,6 +294,7 @@ def get_positions():
                 p.employee_number,
                 p.validation,
                 p.employee_26_27,
+                p.employee_number_26_27,
                 p.status_26_27,
                 p.itr_response,
                 p.notes,
@@ -534,12 +535,26 @@ def get_job_options():
         grade_results = bq_client.query(grade_query).result()
         grade_levels = [row.Grade_Level_Desc for row in grade_results]
 
+        # Get active employees for 26-27 autocomplete
+        emp_query = f"""
+            SELECT DISTINCT
+                CONCAT(First_Name, ' ', Last_Name) as name,
+                Employee_Number
+            FROM `{PROJECT_ID}.{DATASET_ID}.staff_master_list_with_function`
+            WHERE Employment_Status IN ('Active', 'Leave of absence')
+              AND First_Name IS NOT NULL AND Last_Name IS NOT NULL
+            ORDER BY name
+        """
+        emp_results = bq_client.query(emp_query).result()
+        employees_26 = [{'name': row.name, 'employee_number': row.Employee_Number} for row in emp_results]
+
         return jsonify({
             'job_titles': job_titles,
             'job_function_map': job_function_map,
             'subjects': subjects,
             'grade_levels': grade_levels,
-            'categories': ['Leadership', 'Teacher', 'Support', 'Operations', 'Network']
+            'categories': ['Leadership', 'Teacher', 'Support', 'Operations', 'Network'],
+            'employees_26': employees_26,
         })
 
     except Exception as e:
@@ -800,7 +815,7 @@ def update_position(position_id):
             'school', 'job_category', 'job_title', 'subject', 'grade_level',
             'staffing_matrix', 'current_status', 'first_name', 'last_name',
             'employee_25_26', 'email_address', 'employee_number', 'validation',
-            'employee_26_27', 'status_26_27', 'itr_response', 'notes', 'candidate_name',
+            'employee_26_27', 'employee_number_26_27', 'status_26_27', 'itr_response', 'notes', 'candidate_name',
             'start_year', 'end_year'
         ]
 
@@ -898,6 +913,7 @@ def create_position():
             "employee_number": data.get("employee_number", ""),
             "validation": data.get("validation", ""),
             "employee_26_27": data.get("employee_26_27", ""),
+            "employee_number_26_27": data.get("employee_number_26_27", ""),
             "status_26_27": data.get("status_26_27", "Open"),
             "itr_response": data.get("itr_response", ""),
             "notes": data.get("notes", ""),

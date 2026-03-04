@@ -318,6 +318,7 @@
                         <option value="Langston Hughes">Langston Hughes</option>
                         <option value="Phillis Wheatley">Phillis Wheatley</option>
                         <option value="Network">Network</option>
+                        <option value="Unassigned">Unassigned</option>
                     </select>
                 </div>
                 <div class="grid grid-cols-2 gap-4 mb-4">
@@ -420,7 +421,10 @@
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="form-label">26-27 Employee</label>
-                        <input type="text" id="editEmployee26" class="form-input">
+                        <input type="text" id="editEmployee26" class="form-input" list="employeeNameList" autocomplete="off" oninput="onEmployee26Change()">
+                        <datalist id="employeeNameList"></datalist>
+                        <input type="hidden" id="editEmployeeNumber26">
+                        <div id="employeeDuplicateWarning" class="hidden mt-1 p-2 bg-yellow-50 border border-yellow-300 rounded text-yellow-800 text-xs"></div>
                     </div>
                     <div>
                         <label class="form-label">ITR Response</label>
@@ -609,6 +613,8 @@
         function populateFilters() {
             const schoolSel = document.getElementById('filterSchool');
             const catSel = document.getElementById('filterCategory');
+            schoolSel.innerHTML = '<option value="">All Schools</option>';
+            catSel.innerHTML = '<option value="">All Categories</option>';
             filterOptions.schools?.forEach(s => { schoolSel.innerHTML += `<option value="${s}">${s}</option>`; });
             filterOptions.categories?.forEach(c => { catSel.innerHTML += `<option value="${c}">${c}</option>`; });
             updateStatusFilter();
@@ -1076,6 +1082,8 @@
                 document.getElementById('editStatus25').value = p.current_status || 'Active';
                 document.getElementById('editStatus26').value = p.status_26_27 || 'Open';
                 document.getElementById('editEmployee26').value = p.employee_26_27 || '';
+                document.getElementById('editEmployeeNumber26').value = p.employee_number_26_27 || '';
+                document.getElementById('employeeDuplicateWarning').classList.add('hidden');
                 document.getElementById('editItr').value = p.itr_response || '';
                 document.getElementById('editNotes').value = p.notes || '';
                 document.getElementById('editStartYear').value = p.start_year || '25-26';
@@ -1143,6 +1151,7 @@
                 current_status: document.getElementById('editStatus25').value,
                 status_26_27: document.getElementById('editStatus26').value,
                 employee_26_27: document.getElementById('editEmployee26').value,
+                employee_number_26_27: document.getElementById('editEmployeeNumber26').value,
                 itr_response: document.getElementById('editItr').value,
                 notes: document.getElementById('editNotes').value,
                 start_year: document.getElementById('editStartYear').value,
@@ -1261,6 +1270,15 @@
             // Populate Grade Level datalist
             const gradeLevelList = document.getElementById('gradeLevelList');
             gradeLevelList.innerHTML = jobOptions.grade_levels.map(g => `<option value="${g}">`).join('');
+
+            // Populate Employee Name datalist for 26-27
+            const employeeNameList = document.getElementById('employeeNameList');
+            if (jobOptions.employees_26) {
+                employeeNameList.innerHTML = jobOptions.employees_26.map(e => `<option value="${e.name}">`).join('');
+                // Build lookup map: name → employee_number
+                window.employeeLookup = {};
+                jobOptions.employees_26.forEach(e => { window.employeeLookup[e.name] = e.employee_number; });
+            }
         }
 
         function onJobTitleChange() {
@@ -1280,6 +1298,33 @@
                 warning.classList.remove('hidden');
             } else {
                 warning.classList.add('hidden');
+            }
+        }
+
+        function onEmployee26Change() {
+            const name = document.getElementById('editEmployee26').value.trim();
+            const empNumField = document.getElementById('editEmployeeNumber26');
+            const warning = document.getElementById('employeeDuplicateWarning');
+            warning.classList.add('hidden');
+
+            // Check if name matches an internal employee
+            if (window.employeeLookup && window.employeeLookup[name]) {
+                const empNum = window.employeeLookup[name];
+                empNumField.value = empNum;
+
+                // Check for duplicate assignment across other positions
+                const currentId = document.getElementById('editPositionId').value;
+                const dupes = positions.filter(p =>
+                    p.employee_number_26_27 === empNum &&
+                    p.position_id !== currentId
+                );
+                if (dupes.length > 0) {
+                    const dupeInfo = dupes.map(d => `${d.job_title} at ${d.school} (${d.status_26_27 || 'Open'})`).join('; ');
+                    warning.innerHTML = `⚠️ <strong>${name}</strong> is already assigned to: ${dupeInfo}`;
+                    warning.classList.remove('hidden');
+                }
+            } else {
+                empNumField.value = '';
             }
         }
 
