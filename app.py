@@ -573,6 +573,7 @@ def get_filter_options():
         categories = set()
         statuses = set()
         statuses_26 = set()
+        valid_26_statuses = {'Return', 'Possible Open', 'Open', 'Finalist', 'Offer Out', 'Filled', 'Seat Change', 'Not Filling Seat'}
         itr_responses = set()
         matrices = set()
 
@@ -583,7 +584,7 @@ def get_filter_options():
                 categories.add(row.job_category)
             if row.current_status:
                 statuses.add(row.current_status)
-            if row.status_26_27:
+            if row.status_26_27 and row.status_26_27 in valid_26_statuses:
                 statuses_26.add(row.status_26_27)
             if row.itr_response:
                 itr_responses.add(row.itr_response)
