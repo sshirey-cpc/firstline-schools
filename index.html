@@ -33,6 +33,142 @@
         .segment-btn { padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 500; color: #64748b; transition: all 0.2s ease; white-space: nowrap; cursor: pointer; border: none; background: transparent; }
         .segment-btn:hover { color: #334155; }
         .segment-btn.active { background-color: #e47727; color: white; box-shadow: 0 1px 3px 0 rgba(228, 119, 39, 0.3); }
+        .pipe-filter-btn { font-size: 12px; font-weight: 500; padding: 5px 13px; border-radius: 20px; border: 1px solid #dde3ee; background: white; color: #002f60; cursor: pointer; transition: all 0.12s; }
+        .pipe-filter-btn:hover, .pipe-filter-btn.active { background: #002f60; border-color: #002f60; color: white; }
+        .pipe-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+        .pipe-badge-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+        .pb-open { background: #dcfce7; color: #166534; }
+        .pb-open .pipe-badge-dot { background: #166534; }
+        .pb-possible { background: #fef3c7; color: #92400e; }
+        .pb-possible .pipe-badge-dot { background: #d97706; }
+        .pipe-school-tab { font-size: 13px; font-weight: 500; padding: 8px 15px; background: none; border: none; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; white-space: nowrap; }
+        .pipe-school-tab:hover { color: #002f60; background: #e8edf8; border-radius: 6px 6px 0 0; }
+        .pipe-school-tab.active { color: #002f60; border-bottom-color: #e47727; font-weight: 600; }
+        .pipe-school-count { display: inline-flex; align-items: center; justify-content: center; background: #e8edf8; color: #002f60; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 50%; margin-left: 5px; padding: 0 4px; }
+        .pipe-school-tab.active .pipe-school-count { background: #e47727; color: white; }
+        .pipe-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; padding: 2px 7px 2px 4px; border-radius: 16px; margin: 2px 3px 2px 0; border: 1px solid; cursor: default; }
+        .pipe-chip-av { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; flex-shrink: 0; }
+        .pc-new { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+        .pc-new .pipe-chip-av { background: #bfdbfe; color: #1d4ed8; }
+        .pc-screen { background: #f3e8ff; border-color: #ddd6fe; color: #7c3aed; }
+        .pc-screen .pipe-chip-av { background: #ddd6fe; color: #7c3aed; }
+        .pc-interview { background: #fff7ed; border-color: #fed7aa; color: #c2410c; }
+        .pc-interview .pipe-chip-av { background: #fed7aa; color: #c2410c; }
+        .pc-hired { background: #dcfce7; border-color: #bbf7d0; color: #166534; }
+        .pc-hired .pipe-chip-av { background: #bbf7d0; color: #166534; }
+        .pc-pool { background: #f1f5f9; border-color: #cbd5e1; color: #475569; }
+        .pc-pool .pipe-chip-av { background: #cbd5e1; color: #475569; }
+
+        /* Alert banner */
+        .pipe-alert { background: #fff7ed; border: 1.5px solid #fed7aa; border-radius: 10px; padding: 14px 18px; margin-bottom: 24px; display: flex; align-items: flex-start; gap: 12px; }
+        .pipe-alert.hidden { display: none; }
+        .pipe-alert-title { font-size: 13px; font-weight: 700; color: #92400e; margin-bottom: 6px; }
+        .pipe-alert-items { display: flex; flex-wrap: wrap; gap: 6px; }
+        .pipe-alert-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; padding: 3px 10px 3px 6px; border-radius: 14px; background: #fff; border: 1px solid #fed7aa; color: #92400e; cursor: pointer; transition: background 0.12s; }
+        .pipe-alert-chip:hover { background: #fef3c7; }
+        .pipe-alert-chip-av { width: 18px; height: 18px; border-radius: 50%; background: #fed7aa; color: #92400e; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; flex-shrink: 0; }
+        .pipe-chip-unscheduled { outline: 2px solid #f97316; outline-offset: 1px; }
+
+        /* Pipeline table styles */
+        .pipe-table { width: 100%; border-collapse: separate; border-spacing: 0; background: white; border-radius: 10px; border: 1px solid #dde3ee; box-shadow: 0 1px 8px rgba(0,47,96,0.07); overflow: hidden; margin-bottom: 4px; }
+        .pipe-table thead th { background: #f1f4fb; color: #64748b; font-size: 10.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; padding: 10px 14px; text-align: left; border-bottom: 1px solid #dde3ee; }
+        .pipe-table tbody tr { border-bottom: 1px solid #dde3ee; transition: background 0.1s; cursor: pointer; }
+        .pipe-table tbody tr:last-child { border-bottom: none; }
+        .pipe-table tbody tr:hover { background: #eef2fb; }
+        .pipe-table td { padding: 11px 14px; font-size: 13px; vertical-align: middle; }
+        .pipe-pos-title { font-weight: 600; font-size: 13.5px; display: block; margin-bottom: 1px; }
+        .pipe-row-edit-hint { font-size: 10.5px; color: #64748b; opacity: 0; transition: opacity 0.15s; margin-left: 6px; }
+        .pipe-table tbody tr:hover .pipe-row-edit-hint { opacity: 1; }
+        .pipe-no-cands { font-size: 12px; color: #aab; font-style: italic; }
+        .pipe-add-btn { display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; color: #64748b; background: none; border: 1px dashed #dde3ee; border-radius: 16px; padding: 2px 9px; cursor: pointer; font-family: 'Open Sans', sans-serif; transition: all 0.12s; margin-top: 4px; }
+        .pipe-add-btn:hover { border-color: #002f60; color: #002f60; }
+
+        /* Pipeline action buttons */
+        .pipe-action-btn { font-family: 'Open Sans', sans-serif; font-size: 12px; font-weight: 600; padding: 7px 14px; background: rgba(255,255,255,0.15); border: 1px solid #dde3ee; border-radius: 7px; color: #002f60; cursor: pointer; transition: all 0.15s; }
+        .pipe-action-btn:hover { background: #e8edf8; }
+        .pipe-action-primary { background: #e47727; border-color: #e47727; color: white; }
+        .pipe-action-primary:hover { background: #c9621c; }
+
+        /* Pipeline modals */
+        .pipe-overlay { display: none; position: fixed; inset: 0; background: rgba(0,47,96,0.5); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+        .pipe-overlay.open { display: flex; }
+        .pipe-modal { background: white; border-radius: 14px; padding: 30px; width: 460px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,47,96,0.15); animation: pipeModalIn 0.18s ease; }
+        @keyframes pipeModalIn { from { opacity:0; transform:translateY(10px) scale(0.98); } to { opacity:1; transform:none; } }
+        .pipe-modal-title { font-weight: 700; font-size: 19px; color: #002f60; margin-bottom: 4px; }
+        .pipe-modal-sub { font-size: 13px; color: #64748b; margin-bottom: 22px; }
+        .pipe-form-group { margin-bottom: 16px; }
+        .pipe-form-label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 5px; }
+        .pipe-form-input, .pipe-form-select { width: 100%; font-family: 'Open Sans', sans-serif; font-size: 13.5px; padding: 9px 13px; border: 1px solid #dde3ee; border-radius: 7px; color: #002f60; outline: none; transition: border-color 0.12s; background: white; }
+        .pipe-form-input:focus, .pipe-form-select:focus { border-color: #e47727; }
+        .pipe-modal-actions { display: flex; gap: 10px; margin-top: 22px; justify-content: flex-end; }
+        .pipe-btn-cancel { font-family: 'Open Sans', sans-serif; font-size: 13.5px; font-weight: 500; padding: 8px 18px; background: none; border: 1px solid #dde3ee; border-radius: 7px; color: #64748b; cursor: pointer; }
+        .pipe-btn-save { font-family: 'Open Sans', sans-serif; font-size: 13.5px; font-weight: 600; padding: 8px 22px; background: #002f60; border: none; border-radius: 7px; color: white; cursor: pointer; transition: background 0.12s; }
+        .pipe-btn-save:hover { background: #001f40; }
+
+        /* Job detail modal */
+        .pipe-job-modal { width: 600px; max-height: 85vh; overflow-y: auto; }
+        .pipe-job-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+        .pipe-job-title { font-weight: 700; font-size: 21px; line-height: 1.2; color: #002f60; }
+        .pipe-job-meta { font-size: 13px; color: #64748b; margin-top: 3px; }
+        .pipe-close-x { background: none; border: none; font-size: 20px; color: #64748b; cursor: pointer; padding: 0 4px; line-height: 1; }
+        .pipe-close-x:hover { color: #002f60; }
+        .pipe-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #64748b; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #dde3ee; }
+        .pipe-status-toggle { display: flex; gap: 8px; margin-bottom: 20px; }
+        .pipe-status-opt { flex: 1; padding: 9px; border-radius: 8px; border: 2px solid #dde3ee; background: white; font-family: 'Open Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.12s; text-align: center; }
+        .pipe-status-opt:hover { border-color: #002f60; }
+        .pipe-status-opt.sel-open { border-color: #166534; background: #dcfce7; color: #166534; font-weight: 600; }
+        .pipe-status-opt.sel-possible { border-color: #d97706; background: #fef3c7; color: #92400e; font-weight: 600; }
+        .pipe-cand-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; border: 1px solid #dde3ee; margin-bottom: 7px; background: white; }
+        .pipe-cand-name { font-size: 13.5px; font-weight: 600; flex: 1; }
+        .pipe-cand-notes-input { font-family: 'Open Sans', sans-serif; font-size: 12px; color: #64748b; flex: 1; min-width: 0; border: 1px solid transparent; border-radius: 5px; padding: 4px 7px; background: transparent; outline: none; transition: all 0.12s; }
+        .pipe-cand-notes-input:hover { border-color: #dde3ee; background: #f8f9fa; }
+        .pipe-cand-notes-input:focus { border-color: #002f60; background: white; color: #002f60; }
+        .pipe-stage-select { font-family: 'Open Sans', sans-serif; font-size: 12px; font-weight: 500; padding: 4px 8px; border: 1px solid #dde3ee; border-radius: 6px; color: #002f60; background: white; cursor: pointer; outline: none; }
+        .pipe-del-btn { background: none; border: none; color: #cbd5e1; font-size: 16px; cursor: pointer; padding: 0 2px; line-height: 1; transition: color 0.12s; flex-shrink: 0; }
+        .pipe-del-btn:hover { color: #dc2626; }
+
+        /* Candidate profile modal */
+        .pipe-profile-modal { width: 480px; }
+        .pipe-profile-header { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+        .pipe-profile-avatar { width: 48px; height: 48px; border-radius: 50%; background: #002f60; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; flex-shrink: 0; }
+        .pipe-profile-name { font-weight: 700; font-size: 20px; color: #002f60; }
+        .pipe-profile-opening { font-size: 12.5px; color: #64748b; margin-top: 2px; }
+        .pipe-profile-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 6px; }
+        .pipe-profile-field-full { grid-column: 1 / -1; }
+
+        /* Calendar */
+        .pipe-cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+        .pipe-cal-title-row { display: flex; align-items: center; gap: 14px; }
+        .pipe-cal-week-label { font-weight: 700; font-size: 22px; color: #002f60; }
+        .pipe-cal-nav-btn { background: white; border: 1px solid #dde3ee; border-radius: 7px; padding: 7px 14px; font-size: 15px; cursor: pointer; color: #002f60; transition: all 0.12s; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        .pipe-cal-nav-btn:hover { background: #002f60; color: white; border-color: #002f60; }
+        .pipe-cal-today-btn { font-family: 'Open Sans', sans-serif; font-size: 13px; font-weight: 600; background: white; border: 1px solid #dde3ee; border-radius: 7px; padding: 7px 16px; cursor: pointer; color: #002f60; transition: all 0.12s; }
+        .pipe-cal-today-btn:hover { background: #002f60; color: white; border-color: #002f60; }
+        .pipe-cal-grid { display: grid; grid-template-columns: 60px repeat(5, 1fr); gap: 0; background: #dde3ee; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 8px rgba(0,0,0,0.06); }
+        .pipe-cal-col-header { background: #002f60; color: rgba(255,255,255,0.85); padding: 14px 10px; text-align: center; }
+        .pipe-cal-col-header .day-name { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 3px; }
+        .pipe-cal-col-header .day-num { font-weight: 700; font-size: 22px; line-height: 1; }
+        .pipe-cal-col-header.today-col { background: #e47727; color: white; }
+        .pipe-cal-time-label { background: #f8f9fc; border-right: 1px solid #dde3ee; border-bottom: 1px solid #dde3ee; padding: 0 8px; display: flex; align-items: flex-start; justify-content: flex-end; font-size: 10.5px; color: #64748b; padding-top: 6px; min-height: 60px; }
+        .pipe-cal-cell { background: white; border-right: 1px solid #dde3ee; border-bottom: 1px solid #dde3ee; min-height: 60px; padding: 4px; position: relative; }
+        .pipe-cal-cell:last-child { border-right: none; }
+        .pipe-cal-event { border-radius: 6px; padding: 5px 8px; margin-bottom: 3px; cursor: pointer; border-left: 3px solid; transition: opacity 0.12s; }
+        .pipe-cal-event:hover { opacity: 0.85; }
+        .pipe-cal-event-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .pipe-cal-event-role { font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.8; margin-top: 1px; }
+        .pipe-cal-event-time { font-size: 10px; opacity: 0.7; margin-top: 2px; }
+        .pipe-school-color-aa { background: #eff6ff; border-color: #3b82f6; color: #1d4ed8; }
+        .pipe-school-color-lh { background: #fef3c7; border-color: #d97706; color: #92400e; }
+        .pipe-school-color-pw { background: #f3e8ff; border-color: #7c3aed; color: #5b21b6; }
+        .pipe-school-color-sg { background: #dcfce7; border-color: #16a34a; color: #166534; }
+        .pipe-school-color-net { background: #f1f5f9; border-color: #64748b; color: #334155; }
+        .pipe-cal-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+        .pipe-cal-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; }
+        .pipe-cal-legend-dot { width: 10px; height: 10px; border-radius: 3px; border-left: 3px solid; }
+        .pipe-no-interviews { text-align: center; padding: 60px 20px; color: #64748b; }
+        .pipe-no-interviews-icon { font-size: 40px; margin-bottom: 12px; }
+        .pipe-no-interviews-msg { font-weight: 700; font-size: 20px; margin-bottom: 8px; color: #002f60; }
+        .pipe-no-interviews-sub { font-size: 13px; }
         .table-row { transition: all 0.15s ease; cursor: pointer; }
         .table-row:hover { background-color: #fef3e2 !important; }
         .progress-bar { height: 8px; border-radius: 4px; background-color: #e2e8f0; overflow: hidden; }
@@ -85,30 +221,38 @@
         <!-- Header -->
         <header class="sticky top-0 z-50 bg-fls-navy border-b border-fls-navy">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between items-center h-16">
-                    <div class="flex items-center gap-4">
-                        <img src="https://firstlineschools.org/wp-content/uploads/2020/08/FLS-Logo_v2019_Color.png" alt="FirstLine Schools" class="h-10 bg-white rounded px-2 py-1">
-                        <div>
-                            <h1 class="text-lg font-semibold text-white">Staffing Board</h1>
-                            <p class="text-xs text-orange-200">SY 2025-26 → 2026-27</p>
-                        </div>
+                <div class="flex justify-between items-center h-14">
+                    <div class="flex items-center gap-3">
+                        <img src="https://firstlineschools.org/wp-content/uploads/2020/08/FLS-Logo_v2019_Color.png" alt="FirstLine Schools" class="h-8 bg-white rounded px-1.5 py-0.5">
+                        <h1 class="text-sm font-semibold text-white leading-tight">Staffing Board<br><span class="text-[10px] font-normal text-orange-200">SY 25-26 → 26-27</span></h1>
                     </div>
-                    <div class="flex items-center gap-4">
-                        <div class="flex bg-white/10 rounded-lg p-1 gap-1">
-                            <button onclick="setView('overview')" id="tabOverview" class="segment-btn active">25-26 Overview</button>
-                            <button onclick="setView('summary')" id="tabSummary" class="segment-btn">26-27 Overview</button>
-                            <button onclick="setView('positions')" id="tabPositions" class="segment-btn">All Positions</button>
+                    <div class="flex bg-white/10 rounded-lg p-0.5 gap-0.5">
+                        <button onclick="setView('overview')" id="tabOverview" class="segment-btn active" style="padding:5px 10px;font-size:12px">25-26</button>
+                        <button onclick="setView('summary')" id="tabSummary" class="segment-btn" style="padding:5px 10px;font-size:12px">26-27</button>
+                        <button onclick="setView('positions')" id="tabPositions" class="segment-btn" style="padding:5px 10px;font-size:12px">Positions</button>
+                        <button onclick="setView('pipeline')" id="tabPipeline" class="segment-btn hidden" style="padding:5px 10px;font-size:12px">Pipeline</button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <!-- Actions dropdown -->
+                        <div class="relative" id="actionsDropdownWrapper">
+                            <button onclick="toggleActionsDropdown()" class="bg-white/15 hover:bg-white/25 text-white px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1">
+                                Actions
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div id="actionsDropdown" class="hidden absolute right-0 top-full mt-1 bg-white rounded-lg shadow-xl border border-slate-200 py-1 min-w-[200px] z-50">
+                                <a href="https://position-control-form-965913991496.us-central1.run.app" target="_blank" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Position Request Form</a>
+                                <button id="addPositionBtn" onclick="toggleActionsDropdown();showAddModal()" class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">+ Add Position</button>
+                                <button onclick="toggleActionsDropdown();showUnassignedModal()" id="unassignedAction" class="hidden w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                                    <span id="unassignedCount">0</span> Unassigned Staff
+                                </button>
+                            </div>
                         </div>
-                        <a href="https://position-control-form-965913991496.us-central1.run.app" target="_blank" class="bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded-lg text-xs font-medium transition-colors">Position Request Form</a>
-                        <button id="addPositionBtn" onclick="showAddModal()" class="bg-fls-orange hover:bg-fls-orange-dark text-white px-2 py-1 rounded-lg text-xs font-medium transition-colors">+ Add Position</button>
-                        <button onclick="showUnassignedModal()" id="unassignedBadge" class="hidden bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded-lg text-xs font-medium transition-colors">
-                            <span id="unassignedCount">0</span> Unassigned
+                        <!-- Unassigned badge (visible at a glance) -->
+                        <button onclick="showUnassignedModal()" id="unassignedBadge" class="hidden bg-yellow-500/80 hover:bg-yellow-500 text-white px-2 py-1 rounded text-[10px] font-bold transition-colors">
+                            <span id="unassignedCountBadge">0</span>
                         </button>
-                        <div class="flex items-center gap-2">
-                            <img id="userPic" src="" alt="" class="w-8 h-8 rounded-full hidden">
-                            <span id="userName" class="text-sm text-white hidden"></span>
-                            <a href="/logout" class="text-xs text-orange-200 hover:text-white ml-2">Sign out</a>
-                        </div>
+                        <img id="userPic" src="" alt="" class="w-7 h-7 rounded-full hidden">
+                        <a href="/logout" class="text-[10px] text-orange-200/70 hover:text-white">Sign out</a>
                     </div>
                 </div>
             </div>
@@ -270,6 +414,359 @@
                     </div>
                 </div>
                 <p class="text-xs text-slate-400 mt-2">Click any row to edit</p>
+            </div>
+
+            <!-- Pipeline View (Talent Team only) -->
+            <div id="viewPipeline" class="hidden">
+                <!-- Sub-nav: Pipeline / Calendar toggle + action buttons -->
+                <div class="flex items-center justify-between mb-5">
+                    <div class="flex bg-slate-100 rounded-lg p-1 gap-1">
+                        <button onclick="setPipeView('pipeline')" id="pipeNavPipeline" class="segment-btn active text-xs">Pipeline</button>
+                        <button onclick="setPipeView('calendar')" id="pipeNavCalendar" class="segment-btn text-xs">Calendar</button>
+                        <button onclick="setPipeView('insights')" id="pipeNavInsights" class="segment-btn text-xs">Insights</button>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span id="pipeSaveIndicator" style="font-size:11px;color:rgba(100,116,139,0.7);transition:all 0.3s"></span>
+                        <span style="background:rgba(228,119,39,0.12);border:1px solid rgba(228,119,39,0.25);color:#e47727;font-size:11px;font-weight:600;padding:3px 11px;border-radius:16px;letter-spacing:0.04em">2026–27 School Year</span>
+                        <a href="https://app.jazz.co" target="_blank" class="pipe-action-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px">JazzHR &#8599;</a>
+                        <button class="pipe-action-btn pipe-action-primary" onclick="openPipeAddOpening()">+ Add Opening</button>
+                    </div>
+                </div>
+
+                <!-- Pipeline Page -->
+                <div id="pipePipePage">
+                    <!-- Stats grid (7 cards) -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-5">
+                        <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm" style="border-top:3px solid #002f60">
+                            <div class="text-3xl font-bold text-[#002f60]" id="pTotal">0</div>
+                            <div class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Total Openings</div>
+                        </div>
+                        <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm" style="border-top:3px solid #e47727">
+                            <div class="text-3xl font-bold text-[#002f60]" id="pConfirmed">0</div>
+                            <div class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Confirmed Open</div>
+                        </div>
+                        <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm" style="border-top:3px solid #d97706">
+                            <div class="text-3xl font-bold text-[#002f60]" id="pPossible">0</div>
+                            <div class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Possible Open</div>
+                        </div>
+                        <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm" style="border-top:3px solid #002f60">
+                            <div class="text-3xl font-bold text-[#002f60]" id="pCandidates">0</div>
+                            <div class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Active Candidates</div>
+                        </div>
+                        <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm" style="border-top:3px solid #94a3b8">
+                            <div class="text-3xl font-bold text-[#002f60]" id="pNew">0</div>
+                            <div class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">New</div>
+                        </div>
+                        <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm" style="border-top:3px solid #002f60">
+                            <div class="text-3xl font-bold text-[#002f60]" id="pScreen">0</div>
+                            <div class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">At Phone Screen</div>
+                        </div>
+                        <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm" style="border-top:3px solid #002f60">
+                            <div class="text-3xl font-bold text-[#002f60]" id="pInterview">0</div>
+                            <div class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">At Interview</div>
+                        </div>
+                        <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm" style="border-top:3px solid #166534">
+                            <div class="text-3xl font-bold text-[#002f60]" id="pHired">0</div>
+                            <div class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Hired</div>
+                        </div>
+                    </div>
+
+                    <!-- Stage Legend -->
+                    <div class="flex items-center gap-4 flex-wrap bg-white border border-slate-200 rounded-lg px-4 py-2.5 mb-5">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Stage Key</span>
+                        <span class="pipe-chip pc-new"><span class="pipe-chip-av">N</span>New</span>
+                        <span class="pipe-chip pc-screen"><span class="pipe-chip-av">S</span>Screen</span>
+                        <span class="pipe-chip pc-interview"><span class="pipe-chip-av">I</span>Interview</span>
+                        <span class="pipe-chip pc-hired"><span class="pipe-chip-av">H</span>Hired</span>
+                        <span class="pipe-chip pc-pool"><span class="pipe-chip-av">P</span>Pool</span>
+                    </div>
+
+                    <!-- Unscheduled Interview Alert Banner -->
+                    <div class="pipe-alert hidden" id="pipeAlertBanner">
+                        <div style="font-size:18px;flex-shrink:0;margin-top:1px">&#9888;&#65039;</div>
+                        <div style="flex:1">
+                            <div class="pipe-alert-title">Interviews without a scheduled date — follow up needed</div>
+                            <div class="pipe-alert-items" id="pipeAlertItems"></div>
+                        </div>
+                    </div>
+
+                    <!-- School Tabs -->
+                    <div class="flex gap-1 mb-4 border-b-2 border-slate-200 overflow-x-auto" id="pipeSchoolTabs"></div>
+
+                    <!-- Filters -->
+                    <div class="flex flex-wrap gap-2 items-center mb-5">
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Category:</span>
+                        <button class="pipe-filter-btn active" data-pcat="all" onclick="setPipeCat('all',this)">All</button>
+                        <button class="pipe-filter-btn" data-pcat="Incoming" onclick="setPipeCat('Incoming',this)" style="border-color:#f97316;color:#c2410c">Incoming</button>
+                        <button class="pipe-filter-btn" data-pcat="Teacher" onclick="setPipeCat('Teacher',this)">Teachers</button>
+                        <button class="pipe-filter-btn" data-pcat="Support" onclick="setPipeCat('Support',this)">Support</button>
+                        <button class="pipe-filter-btn" data-pcat="Leadership" onclick="setPipeCat('Leadership',this)">Leadership</button>
+                        <button class="pipe-filter-btn" data-pcat="Operations" onclick="setPipeCat('Operations',this)">Operations</button>
+                        <button class="pipe-filter-btn" data-pcat="Network" onclick="setPipeCat('Network',this)">Network</button>
+                        <span class="mx-2"></span>
+                        <button class="pipe-filter-btn active" data-pst="all" onclick="setPipeSt('all',this)">All Status</button>
+                        <button class="pipe-filter-btn" data-pst="Open" onclick="setPipeSt('Open',this)">Confirmed Open</button>
+                        <button class="pipe-filter-btn" data-pst="Possible Open" onclick="setPipeSt('Possible Open',this)">Possible Open</button>
+                        <div class="ml-auto relative">
+                            <input type="text" id="pipeSearch" oninput="renderPipelineContent()" placeholder="Search roles or candidates..." class="pl-8 pr-3 py-1.5 border border-slate-200 rounded-full text-sm w-52 bg-white focus:border-[#e47727] outline-none">
+                            <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none">&#128269;</span>
+                        </div>
+                    </div>
+
+                    <!-- Pipeline Content (school blocks with tables) -->
+                    <div id="pipeContent"></div>
+                </div><!-- end pipePipePage -->
+
+                <!-- Calendar Page -->
+                <div id="pipeCalPage" class="hidden">
+                    <div class="pipe-cal-header">
+                        <div class="pipe-cal-title-row">
+                            <button class="pipe-cal-nav-btn" onclick="pipeCalPrevWeek()">&#8249;</button>
+                            <div class="pipe-cal-week-label" id="pipeCalWeekLabel"></div>
+                            <button class="pipe-cal-nav-btn" onclick="pipeCalNextWeek()">&#8250;</button>
+                            <button class="pipe-cal-today-btn" onclick="pipeCalGoToday()">Today</button>
+                        </div>
+                        <div class="flex gap-2 flex-wrap" id="pipeCalSchoolFilter"></div>
+                    </div>
+                    <div class="pipe-cal-legend" id="pipeCalLegend"></div>
+                    <div id="pipeCalGrid"></div>
+                </div>
+
+                <!-- Insights Page -->
+                <div id="pipeInsightsPage" class="hidden">
+                    <div id="pipeInsightsContent">
+                        <div class="text-center py-10"><div class="loading mx-auto mb-3"></div><p class="text-sm text-slate-500">Loading insights...</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pipeline Modals -->
+            <!-- Add Candidate Modal -->
+            <div class="pipe-overlay" id="pipeAddCandOverlay">
+                <div class="pipe-modal">
+                    <div class="pipe-modal-title">Add Candidate</div>
+                    <div class="pipe-modal-sub" id="pipeAddCandSub"></div>
+                    <div class="pipe-form-group">
+                        <label class="pipe-form-label">Candidate Name</label>
+                        <input type="text" class="pipe-form-input" id="pipeAddName" placeholder="Search JazzHR candidates or type a name..." autocomplete="off" />
+                        <div id="pipeAddSuggestions" style="display:none;max-height:180px;overflow-y:auto;background:#f8fafc;border:1px solid #dde3ee;border-radius:8px;margin-top:4px"></div>
+                    </div>
+                    <div class="pipe-form-group">
+                        <label class="pipe-form-label">Stage</label>
+                        <select class="pipe-form-select" id="pipeAddStage">
+                            <option value="new">New Application</option>
+                            <option value="screen">Phone Screen</option>
+                            <option value="interview">Interview / Sample Teach</option>
+                            <option value="hired">Hired</option>
+                            <option value="pool">Talent Pool</option>
+                        </select>
+                    </div>
+                    <div class="pipe-form-group">
+                        <label class="pipe-form-label">Notes (optional)</label>
+                        <input type="text" class="pipe-form-input" id="pipeAddNotes" placeholder="e.g. Strong ELA background, certified" />
+                    </div>
+                    <div class="pipe-form-group">
+                        <label class="pipe-form-label">Interview Date (if scheduled)</label>
+                        <input type="date" class="pipe-form-input" id="pipeAddDate" />
+                    </div>
+                    <div class="pipe-form-group">
+                        <label class="pipe-form-label">Interview Time (optional)</label>
+                        <input type="time" class="pipe-form-input" id="pipeAddTime" />
+                    </div>
+                    <div class="pipe-modal-actions">
+                        <button class="pipe-btn-cancel" onclick="closePipeAddCand()">Cancel</button>
+                        <button class="pipe-btn-save" onclick="savePipeCandidate()">Add Candidate</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Job Detail Modal -->
+            <div class="pipe-overlay" id="pipeJobOverlay">
+                <div class="pipe-modal pipe-job-modal">
+                    <div class="pipe-job-header">
+                        <div>
+                            <div class="pipe-job-title" id="pipeJobTitle"></div>
+                            <div class="pipe-job-meta" id="pipeJobMeta"></div>
+                        </div>
+                        <button class="pipe-close-x" onclick="closePipeJobModal()">&#10005;</button>
+                    </div>
+                    <div class="pipe-section-title">Opening Status</div>
+                    <div class="pipe-status-toggle">
+                        <button class="pipe-status-opt" id="pipeJobOptOpen" onclick="setPipeJobStatus('Open')">&#10003; Confirmed Open</button>
+                        <button class="pipe-status-opt" id="pipeJobOptPossible" onclick="setPipeJobStatus('Possible Open')">&#9675; Possible Open</button>
+                    </div>
+                    <div class="pipe-section-title">Candidates in Pipeline</div>
+                    <div id="pipeJobCandidates"></div>
+                    <div style="margin-top:14px">
+                        <button class="pipe-add-btn" style="font-size:13px;padding:6px 14px;border-radius:8px" onclick="closePipeJobModal();openPipeAddCand(pipeCurrentJobId)">+ Add Candidate</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Candidate Profile Modal -->
+            <div class="pipe-overlay" id="pipeProfileOverlay">
+                <div class="pipe-modal pipe-profile-modal">
+                    <div class="pipe-profile-header">
+                        <div class="pipe-profile-avatar" id="pipeProfileAvatar"></div>
+                        <div>
+                            <div class="pipe-profile-name" id="pipeProfileName"></div>
+                            <div class="pipe-profile-opening" id="pipeProfileOpening"></div>
+                        </div>
+                    </div>
+                    <div class="pipe-profile-fields">
+                        <div class="pipe-form-group">
+                            <label class="pipe-form-label">Stage</label>
+                            <select class="pipe-form-select" id="pipeProfileStage">
+                                <option value="new">New Application</option>
+                                <option value="screen">Phone Screen</option>
+                                <option value="interview">Interview / Sample Teach</option>
+                                <option value="hired">Hired</option>
+                                <option value="pool">Talent Pool</option>
+                            </select>
+                        </div>
+                        <div class="pipe-form-group">
+                            <label class="pipe-form-label">Interview Date</label>
+                            <input type="date" class="pipe-form-input" id="pipeProfileDate" />
+                        </div>
+                        <div class="pipe-form-group">
+                            <label class="pipe-form-label">Interview Time</label>
+                            <input type="time" class="pipe-form-input" id="pipeProfileTime" />
+                        </div>
+                        <div class="pipe-form-group pipe-profile-field-full">
+                            <label class="pipe-form-label">Notes</label>
+                            <textarea class="pipe-form-input" id="pipeProfileNotes" rows="4" placeholder="Add notes about this candidate..." style="resize:vertical;line-height:1.5"></textarea>
+                        </div>
+                    </div>
+                    <div class="pipe-modal-actions" style="flex-wrap:wrap;gap:8px;">
+                        <button class="pipe-btn-cancel" style="color:#dc2626;border-color:#fecaca;margin-right:auto" onclick="pipeRemoveFromProfile()">&#10005; Remove</button>
+                        <button class="pipe-btn-cancel" onclick="closePipeProfile()">Cancel</button>
+                        <button class="pipe-btn-cancel" style="color:#3b82f6;border-color:#bfdbfe" onclick="pipeProfileToMove()">&#8644; Move</button>
+                        <button class="pipe-btn-cancel" style="color:#166534;border-color:#bbf7d0" onclick="pipeSendCalendarInvite()">&#128197; Invite</button>
+                        <button class="pipe-btn-save" onclick="savePipeProfile()">Save</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Move Candidate Modal -->
+            <div class="pipe-overlay" id="pipeMoveOverlay">
+                <div class="pipe-modal" style="width:500px">
+                    <div class="pipe-modal-title">Move Candidate</div>
+                    <div class="pipe-modal-sub" id="pipeMoveCandName"></div>
+                    <div class="pipe-form-group">
+                        <label class="pipe-form-label">School</label>
+                        <select class="pipe-form-select" id="pipeMoveSchool" onchange="populatePipeMoveRoles()"></select>
+                    </div>
+                    <div class="pipe-form-group">
+                        <label class="pipe-form-label">Opening</label>
+                        <select class="pipe-form-select" id="pipeMoveRole"></select>
+                    </div>
+                    <div class="pipe-form-group">
+                        <label class="pipe-form-label">Stage at New Opening</label>
+                        <select class="pipe-form-select" id="pipeMoveStage">
+                            <option value="new">New Application</option>
+                            <option value="screen">Phone Screen</option>
+                            <option value="interview">Interview / Sample Teach</option>
+                            <option value="hired">Hired</option>
+                            <option value="pool">Talent Pool</option>
+                        </select>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+                        <input type="checkbox" id="pipeMoveAndRemove" checked style="width:15px;height:15px;cursor:pointer;accent-color:#002f60"/>
+                        <label for="pipeMoveAndRemove" style="font-size:13px;color:#64748b;cursor:pointer">Remove from current opening after move</label>
+                    </div>
+                    <div class="pipe-modal-actions">
+                        <button class="pipe-btn-cancel" onclick="closePipeMoveModal()">Cancel</button>
+                        <button class="pipe-btn-save" onclick="confirmPipeMove()">Move Candidate</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Opening Modal -->
+            <div class="pipe-overlay" id="pipeAddOpeningOverlay">
+                <div class="pipe-modal" style="width:500px">
+                    <div class="pipe-modal-title">Add New Opening</div>
+                    <div class="pipe-modal-sub">This position will be added to the pipeline.</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                        <div class="pipe-form-group" style="grid-column:1/-1">
+                            <label class="pipe-form-label">School</label>
+                            <select class="pipe-form-select" id="pipeAoSchool">
+                                <option value="Arthur Ashe">Arthur Ashe</option>
+                                <option value="Langston Hughes">Langston Hughes</option>
+                                <option value="Phillis Wheatley">Phillis Wheatley</option>
+                                <option value="Samuel J Green">Samuel J Green</option>
+                                <option value="Network">Network</option>
+                                <option value="Unassigned">Unassigned</option>
+                            </select>
+                        </div>
+                        <div class="pipe-form-group">
+                            <label class="pipe-form-label">Category</label>
+                            <select class="pipe-form-select" id="pipeAoCat">
+                                <option value="Teacher">Teacher</option>
+                                <option value="Support">Support</option>
+                                <option value="Leadership">Leadership</option>
+                                <option value="Operations">Operations</option>
+                                <option value="Network">Network</option>
+                            </select>
+                        </div>
+                        <div class="pipe-form-group">
+                            <label class="pipe-form-label">Status</label>
+                            <select class="pipe-form-select" id="pipeAoStatus">
+                                <option value="Open">Confirmed Open</option>
+                                <option value="Possible Open">Possible Open</option>
+                            </select>
+                        </div>
+                        <div class="pipe-form-group" style="grid-column:1/-1">
+                            <label class="pipe-form-label">Job Title</label>
+                            <input type="text" class="pipe-form-input" id="pipeAoTitle" placeholder="e.g. K-8 Lead Teacher" />
+                        </div>
+                        <div class="pipe-form-group">
+                            <label class="pipe-form-label">Subject</label>
+                            <input type="text" class="pipe-form-input" id="pipeAoSubject" placeholder="e.g. ELA, Math" />
+                        </div>
+                        <div class="pipe-form-group">
+                            <label class="pipe-form-label">Grade / Level</label>
+                            <input type="text" class="pipe-form-input" id="pipeAoGrade" placeholder="e.g. Grade 4, K thru 2" />
+                        </div>
+                    </div>
+                    <div class="pipe-modal-actions">
+                        <button class="pipe-btn-cancel" onclick="closePipeAddOpening()">Cancel</button>
+                        <button class="pipe-btn-save" onclick="savePipeNewOpening()">Add Opening</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assign Incoming Candidate to Position Modal -->
+            <div class="pipe-overlay" id="pipeAssignOverlay">
+                <div class="pipe-modal" style="width:500px">
+                    <div class="pipe-modal-title">Assign to Position</div>
+                    <div class="pipe-modal-sub" id="pipeAssignCandInfo"></div>
+                    <div class="pipe-form-group">
+                        <label class="pipe-form-label">School</label>
+                        <select class="pipe-form-select" id="pipeAssignSchool" onchange="populatePipeAssignPositions()"></select>
+                    </div>
+                    <div class="pipe-form-group">
+                        <label class="pipe-form-label">Position</label>
+                        <select class="pipe-form-select" id="pipeAssignPosition"></select>
+                    </div>
+                    <div class="pipe-form-group">
+                        <label class="pipe-form-label">Stage</label>
+                        <select class="pipe-form-select" id="pipeAssignStage">
+                            <option value="new">New Application</option>
+                            <option value="screen">Phone Screen</option>
+                            <option value="interview">Interview / Sample Teach</option>
+                            <option value="hired">Hired</option>
+                            <option value="pool">Talent Pool</option>
+                        </select>
+                    </div>
+                    <div class="pipe-form-group">
+                        <label class="pipe-form-label">Notes (optional)</label>
+                        <input type="text" class="pipe-form-input" id="pipeAssignNotes" placeholder="e.g. Strong math background, SPED certified" />
+                    </div>
+                    <div class="pipe-modal-actions">
+                        <button class="pipe-btn-cancel" onclick="closePipeAssign()">Cancel</button>
+                        <button class="pipe-btn-save" onclick="confirmPipeAssign()">Assign Candidate</button>
+                    </div>
+                </div>
             </div>
 
         </main>
@@ -551,12 +1048,22 @@
             document.getElementById('googleSignInBtn').classList.remove('hidden');
         }
 
+        function toggleActionsDropdown() {
+            document.getElementById('actionsDropdown').classList.toggle('hidden');
+        }
+        // Close actions dropdown when clicking outside
+        document.addEventListener('click', e => {
+            const w = document.getElementById('actionsDropdownWrapper');
+            if (w && !w.contains(e.target)) document.getElementById('actionsDropdown').classList.add('hidden');
+        });
+
         async function showDashboard(user, isTalent) {
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('dashboardScreen').classList.remove('hidden');
             if (user.picture) { document.getElementById('userPic').src = user.picture; document.getElementById('userPic').classList.remove('hidden'); }
-            if (user.name) { document.getElementById('userName').textContent = user.name; document.getElementById('userName').classList.remove('hidden'); }
             if (!isTalent) { document.getElementById('addPositionBtn').classList.add('hidden'); }
+            if (isTalent) { document.getElementById('tabPipeline').classList.remove('hidden'); }
+            window._isTalent = isTalent;
             await loadData();
         }
 
@@ -598,6 +1105,7 @@
             document.querySelectorAll('[id^="tab"]').forEach(el => el.classList.remove('active'));
             document.getElementById('view' + view.charAt(0).toUpperCase() + view.slice(1)).classList.remove('hidden');
             document.getElementById('tab' + view.charAt(0).toUpperCase() + view.slice(1)).classList.add('active');
+            if (view === 'pipeline' && window._isTalent) { if (!pipeLoaded) loadPipelineData(); }
         }
 
         function setYearView(year) {
@@ -771,17 +1279,17 @@
             // Network totals cards for 26-27
             document.getElementById('summaryTotals').innerHTML = `
                 <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
-                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">26-27 Openings</div>
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">26-27 Openings*</div>
                     <div class="text-3xl font-bold text-slate-900">${allData.total_to_hire || 0}</div>
-                    <div class="text-xs text-slate-400 mt-1">Total positions to fill</div>
+                    <div class="text-xs text-slate-400 mt-1">School-based roles only</div>
                 </div>
                 <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
-                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Hired for 26-27</div>
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Hired for 26-27*</div>
                     <div class="text-3xl font-bold text-green-600">${allData.hired || 0}</div>
                     <div class="text-xs text-slate-400 mt-1">New hires confirmed</div>
                 </div>
                 <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
-                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Remaining</div>
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Remaining*</div>
                     <div class="text-3xl font-bold text-orange-600">${allData.remaining || 0}</div>
                     <div class="text-xs text-slate-400 mt-1">Still need to fill</div>
                 </div>
@@ -797,11 +1305,11 @@
                 </div>
             `;
 
-            // Category cards
+            // Category cards (school-based)
             const cats = ['Leadership', 'Teacher', 'Support', 'Operations'];
             const catLabels = { Leadership: 'Leaders', Teacher: 'Teachers', Support: 'Support', Operations: 'Operations' };
-            const catColors = { Leadership: 'blue', Teacher: 'purple', Support: 'teal', Operations: 'slate' };
 
+            const networkData = totals['Network'] || {};
             document.getElementById('categoryCards').innerHTML = cats.map(cat => {
                 const d = totals[cat] || {};
                 const pctClass = d.pct_goal >= 50 ? 'text-green-600' : d.pct_goal > 0 ? 'text-yellow-600' : 'text-red-600';
@@ -830,7 +1338,27 @@
                         </div>
                     </div>
                 `;
-            }).join('');
+            }).join('') + (networkData.total_to_hire > 0 ? `
+                <div class="bg-slate-50 rounded-xl p-5 border border-slate-300 shadow-sm col-span-2 md:col-span-4">
+                    <div class="flex justify-between items-center">
+                        <div class="text-sm font-bold text-slate-700">Network Roles <span class="text-xs font-normal text-slate-400">*excluded from totals above</span></div>
+                        <div class="flex gap-6 text-center">
+                            <div>
+                                <div class="text-xl font-bold text-slate-900">${networkData.total_to_hire || 0}</div>
+                                <div class="text-[10px] text-slate-400 uppercase">To Hire</div>
+                            </div>
+                            <div>
+                                <div class="text-xl font-bold text-green-600">${networkData.hired || 0}</div>
+                                <div class="text-[10px] text-slate-400 uppercase">Hired</div>
+                            </div>
+                            <div>
+                                <div class="text-xl font-bold text-orange-600">${networkData.remaining || 0}</div>
+                                <div class="text-[10px] text-slate-400 uppercase">Left</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ` : '');
 
             // School cards
             const schools = hiringSummary.filter(r => r.school !== 'ALL SCHOOLS');
@@ -1048,6 +1576,1053 @@
 
         function filterBySchool(school) { document.getElementById('filterSchool').value = school; setView('positions'); applyFilters(); }
 
+        // ─── Pipeline Functions (Talent Team only) ──────────────────────────
+        let pipePositions = [];
+        let pipeCandsByJob = {};
+        let pipeCandsByPosition = {};
+        let pipeIncomingCandidates = [];
+        let pipeLoaded = false;
+        let pipeSchool = 'all';
+        let pipeCat = 'all';
+        let pipeSt = 'all';
+        let pipeCurrentJobId = null;
+        let pipeCurrentJobLabel = '';
+        let pipePendingAddId = null;
+        let pipeMoveState = { positionId: null, candId: null };
+        let pipeProfileState = { positionId: null, candId: null };
+        let pipeCalWeekStart = null;
+        let pipeCalSchoolFilters = new Set();
+        let pipePendingImport = [];
+        let pipeSubView = 'pipeline';
+
+        const pipeInitials = n => n ? n.split(' ').map(x => x[0]).join('').slice(0,2).toUpperCase() : '?';
+        const pipeChipCls = s => ({new:'pc-new',screen:'pc-screen',interview:'pc-interview',hired:'pc-hired',pool:'pc-pool'}[s] || 'pc-pool');
+        const pipeStageLbl = s => ({new:'New',screen:'Screen',interview:'Interview',hired:'Hired',pool:'Pool'}[s] || s);
+
+        function setPipeView(view) {
+            pipeSubView = view;
+            document.getElementById('pipePipePage').classList.toggle('hidden', view !== 'pipeline');
+            document.getElementById('pipeCalPage').classList.toggle('hidden', view !== 'calendar');
+            document.getElementById('pipeInsightsPage').classList.toggle('hidden', view !== 'insights');
+            document.getElementById('pipeNavPipeline').classList.toggle('active', view === 'pipeline');
+            document.getElementById('pipeNavCalendar').classList.toggle('active', view === 'calendar');
+            document.getElementById('pipeNavInsights').classList.toggle('active', view === 'insights');
+            if (view === 'calendar') renderPipeCalendar();
+            if (view === 'insights') loadPipeInsights();
+        }
+
+        // Get all candidates for a position (manual + from candidate_name field)
+        function getPipeCandidates(p) {
+            const cands = [];
+            // Manual candidates from pipeline_candidates table
+            const manual = pipeCandsByPosition[p.position_id] || [];
+            manual.forEach(c => cands.push({...c, source: 'manual'}));
+            // Legacy candidate_name field (comma-separated)
+            if (p.candidate_name && p.candidate_name.trim()) {
+                p.candidate_name.split(',').forEach(n => {
+                    const name = n.trim();
+                    if (name && !cands.find(c => c.name.toLowerCase() === name.toLowerCase())) {
+                        cands.push({name, stage: 'screen', id: 'legacy_' + name.replace(/\s+/g,'_'), source: 'legacy'});
+                    }
+                });
+            }
+            return cands;
+        }
+
+        function pipeSaveStatus(status) {
+            const el = document.getElementById('pipeSaveIndicator');
+            if (!el) return;
+            if (status === 'saving') { el.textContent = '⟳ Saving...'; el.style.color = '#64748b'; }
+            else if (status === 'saved') { el.textContent = '✓ Saved'; el.style.color = '#16a34a'; setTimeout(() => { el.textContent = ''; }, 2500); }
+            else if (status === 'error') { el.textContent = '⚠ Save failed'; el.style.color = '#dc2626'; }
+        }
+
+        async function loadPipelineData() {
+            // Show loading overlay
+            const pipeContent = document.getElementById('pipePipePage');
+            if (pipeContent && !pipeLoaded) {
+                const existing = document.getElementById('pipeLoadingOverlay');
+                if (!existing) {
+                    const overlay = document.createElement('div');
+                    overlay.id = 'pipeLoadingOverlay';
+                    overlay.style.cssText = 'position:fixed;inset:0;background:#002f60;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;color:#fff;font-family:Open Sans,sans-serif;gap:14px';
+                    overlay.innerHTML = '<img src="https://firstlineschools.org/wp-content/uploads/2020/08/FLS-Logo_v2019_Color.png" alt="FirstLine Schools" style="height:48px;background:white;border-radius:8px;padding:6px 12px"><div style="font-size:13px;color:rgba(255,255,255,0.5);letter-spacing:0.1em;text-transform:uppercase">Loading Pipeline...</div><div class="loading" style="border-top-color:#e47727"></div>';
+                    document.body.appendChild(overlay);
+                }
+            }
+            try {
+                const res = await fetch('/api/pipeline/data');
+                const data = await res.json();
+                pipePositions = data.positions || [];
+                pipeCandsByJob = data.candidates_by_job || {};
+                pipeCandsByPosition = data.candidates_by_position || {};
+                pipeIncomingCandidates = data.incoming_candidates || [];
+                const stats = data.stats || {};
+
+                document.getElementById('pTotal').textContent = stats.total_openings || 0;
+                document.getElementById('pConfirmed').textContent = stats.confirmed_open || 0;
+                document.getElementById('pPossible').textContent = stats.possible_open || 0;
+                document.getElementById('pCandidates').textContent = stats.active_candidates || 0;
+                document.getElementById('pNew').textContent = stats.at_new || 0;
+                document.getElementById('pScreen').textContent = stats.at_screen || 0;
+                document.getElementById('pInterview').textContent = stats.at_interview || 0;
+                document.getElementById('pHired').textContent = stats.hired || 0;
+
+                // Initialize calendar
+                if (!pipeCalWeekStart) {
+                    pipeCalWeekStart = pipeGetMonday(new Date());
+                    const schools = [...new Set(pipePositions.map(p => p.school))];
+                    pipeCalSchoolFilters = new Set(schools);
+                }
+
+                renderPipeSchoolTabs();
+                renderPipelineContent();
+                renderPipeAlert();
+                pipeLoaded = true;
+                // Remove loading overlay
+                const loadingOverlay = document.getElementById('pipeLoadingOverlay');
+                if (loadingOverlay) loadingOverlay.remove();
+            } catch (e) {
+                console.error('Failed to load pipeline data:', e);
+                document.getElementById('pipeContent').innerHTML = '<div class="text-center py-10 text-red-500">Failed to load pipeline data.</div>';
+                const loadingOverlay = document.getElementById('pipeLoadingOverlay');
+                if (loadingOverlay) loadingOverlay.remove();
+            }
+        }
+
+        function renderPipeSchoolTabs() {
+            const schools = [...new Set(pipePositions.map(p => p.school))].sort();
+            let html = '<button class="pipe-school-tab ' + (pipeSchool==='all'?'active':'') + '" onclick="setPipeSchool(\'all\')">All Schools <span class="pipe-school-count">' + pipePositions.length + '</span></button>';
+            schools.forEach(s => {
+                const cnt = pipePositions.filter(p => p.school === s).length;
+                html += '<button class="pipe-school-tab ' + (pipeSchool===s?'active':'') + '" onclick="setPipeSchool(\'' + s.replace(/'/g, "\\'") + '\')">' + s + ' <span class="pipe-school-count">' + cnt + '</span></button>';
+            });
+            document.getElementById('pipeSchoolTabs').innerHTML = html;
+        }
+
+        function setPipeSchool(s) { pipeSchool = s; renderPipeSchoolTabs(); renderPipelineContent(); }
+        function setPipeCat(c, btn) { pipeCat = c; document.querySelectorAll('#viewPipeline [data-pcat]').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderPipelineContent(); }
+        function setPipeSt(s, btn) { pipeSt = s; document.querySelectorAll('#viewPipeline [data-pst]').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderPipelineContent(); }
+
+        function getPipeFiltered() {
+            const q = (document.getElementById('pipeSearch') ? document.getElementById('pipeSearch').value : '').toLowerCase();
+            return pipePositions.filter(p => {
+                if (pipeSchool !== 'all' && p.school !== pipeSchool) return false;
+                if (pipeCat !== 'all' && p.job_category !== pipeCat) return false;
+                if (pipeSt !== 'all' && p.status_26_27 !== pipeSt) return false;
+                if (q) {
+                    const cands = getPipeCandidates(p);
+                    const candNames = cands.map(c => c.name).join(' ').toLowerCase();
+                    const fields = [p.job_title, p.subject, p.grade_level, p.school, p.first_name, p.last_name, candNames].filter(Boolean).join(' ').toLowerCase();
+                    if (!fields.includes(q)) return false;
+                }
+                return true;
+            });
+        }
+
+        function buildPipeIncumbentCell(p) {
+            const name = (p.first_name && p.last_name) ? (p.first_name + ' ' + p.last_name) : '';
+            if (!name) {
+                return '<span style="color:#aab;font-style:italic;font-size:12px">Open seat</span>';
+            }
+            let retSpan = '';
+            if (p.itr_response && p.itr_response !== '-') {
+                const retColor = p.itr_response === 'Yes' ? 'color:#166534;font-weight:600' : (p.itr_response === 'No' ? 'color:#dc2626;font-weight:600' : 'color:#92400e');
+                const retIcon = p.itr_response === 'Yes' ? '&#10003; ' : (p.itr_response === 'No' ? '&#10007; ' : '? ');
+                retSpan = '<span style="font-size:11px;' + retColor + '">' + retIcon + p.itr_response + '</span>';
+            }
+            return '<span style="display:block;font-size:12.5px">' + name + '</span>' + retSpan;
+        }
+
+        function buildPipeChipClickable(posId, c, showSchedule) {
+            const cls = pipeChipCls(c.stage);
+            const unscheduled = (c.stage === 'interview' && !c.date) ? ' pipe-chip-unscheduled' : '';
+            const trailer = (c.stage === 'interview' && !c.date ? ' &#9888;' : '') + (c.date ? ' &#128197;' : '');
+            return '<span class="pipe-chip ' + cls + unscheduled + '" style="cursor:pointer" title="Click to view profile" onclick="event.stopPropagation();openPipeProfile(\'' + posId + '\',\'' + c.id + '\')">'
+                + '<span class="pipe-chip-av">' + pipeInitials(c.name) + '</span>' + c.name + (showSchedule ? trailer : '') + '</span>';
+        }
+
+        // ── Alert banner for unscheduled interviews ──
+        function renderPipeAlert() {
+            const unscheduled = [];
+            pipePositions.forEach(p => {
+                const cands = getPipeCandidates(p);
+                cands.forEach(c => {
+                    if (c.stage === 'interview' && !c.date) {
+                        unscheduled.push({ candidate: c, position: p });
+                    }
+                });
+            });
+            const banner = document.getElementById('pipeAlertBanner');
+            const items = document.getElementById('pipeAlertItems');
+            if (!unscheduled.length) { banner.classList.add('hidden'); return; }
+            banner.classList.remove('hidden');
+            items.innerHTML = unscheduled.map(({ candidate: c, position: p }) =>
+                '<span class="pipe-alert-chip" onclick="openPipeJobModal(\'' + p.position_id + '\')" title="' + p.school + ' — ' + p.job_title + '">' +
+                '<span class="pipe-alert-chip-av">' + pipeInitials(c.name) + '</span>' +
+                c.name + ' &middot; ' + (p.school ? p.school.split(' ')[0] : '') + '</span>'
+            ).join('');
+        }
+
+        function renderPipelineContent() {
+            const filtered = getPipeFiltered();
+            if (!filtered.length && !pipeIncomingCandidates.length) {
+                document.getElementById('pipeContent').innerHTML = '<div class="text-center py-10 text-slate-400 text-sm">No openings match your filters.</div>';
+                return;
+            }
+
+            const bySchool = {};
+            filtered.forEach(p => {
+                if (!bySchool[p.school]) bySchool[p.school] = {};
+                if (!bySchool[p.school][p.job_category]) bySchool[p.school][p.job_category] = [];
+                bySchool[p.school][p.job_category].push(p);
+            });
+
+            const catOrder = ['Incoming', 'Teacher', 'Leadership', 'Support', 'Operations', 'Network'];
+            let html = '';
+
+            // ── Incoming Candidates from JazzHR ──
+            // Exclude candidates already assigned to positions (in pipeline_candidates table)
+            const assignedNames = new Set();
+            Object.values(pipeCandsByPosition).forEach(cands => {
+                cands.forEach(c => assignedNames.add(c.name.toLowerCase()));
+            });
+            const incoming = pipeIncomingCandidates.filter(c => !assignedNames.has(c.name.toLowerCase()));
+
+            if (incoming.length > 0) {
+                // Group by JazzHR job title
+                const byJobTitle = {};
+                incoming.forEach(c => {
+                    const jt = c.job_title || 'Unknown Position';
+                    if (!byJobTitle[jt]) byJobTitle[jt] = [];
+                    byJobTitle[jt].push(c);
+                });
+
+                const isCollapsed = document.getElementById('pipeIncomingBody') ? document.getElementById('pipeIncomingBody').style.display === 'none' : true;
+                html += '<div class="mb-10">'
+                    + '<div class="flex items-center gap-2.5 mb-3 pb-2.5 cursor-pointer" style="border-bottom:2px solid #e47727" onclick="document.getElementById(\'pipeIncomingBody\').style.display = document.getElementById(\'pipeIncomingBody\').style.display === \'none\' ? \'block\' : \'none\'; this.querySelector(\'.pipe-toggle-arrow\').textContent = document.getElementById(\'pipeIncomingBody\').style.display === \'none\' ? \'\\u25B6\' : \'\\u25BC\'">'
+                    + '<span class="pipe-toggle-arrow" style="font-size:12px;color:#e47727">' + (isCollapsed ? '\u25B6' : '\u25BC') + '</span>'
+                    + '<h2 class="text-xl font-bold" style="color:#e47727">Incoming from JazzHR</h2>'
+                    + '<span class="text-xs text-slate-500">' + incoming.length + ' candidate' + (incoming.length !== 1 ? 's' : '') + ' awaiting assignment</span>'
+                    + '</div>'
+                    + '<div id="pipeIncomingBody" style="display:' + (isCollapsed ? 'none' : 'block') + '">';
+
+                Object.keys(byJobTitle).sort().forEach(jobTitle => {
+                    const cands = byJobTitle[jobTitle];
+                    html += '<div class="mb-4">'
+                        + '<span class="inline-block text-[10px] font-bold tracking-widest uppercase mb-2 px-2.5 py-1 rounded" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa">'
+                        + jobTitle + ' (' + cands.length + ')</span>'
+                        + '<div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">'
+                        + '<div class="flex flex-wrap gap-2">';
+
+                    const q = (document.getElementById('pipeSearch') ? document.getElementById('pipeSearch').value : '').toLowerCase();
+                    cands.forEach(c => {
+                        const hl = (q && c.name.toLowerCase().includes(q)) ? 'outline:2px solid #e47727;' : '';
+                        const stageCls = pipeChipCls(c.stage);
+                        html += '<span class="pipe-chip ' + stageCls + '" style="cursor:pointer;' + hl + '" title="Click to assign to a position" onclick="openPipeAssignModal(\'' + c.id + '\',\'' + c.name.replace(/'/g,"\\'") + '\',\'' + c.stage + '\',\'' + (c.apply_date || '') + '\',\'' + jobTitle.replace(/'/g,"\\'") + '\')">'
+                            + '<span class="pipe-chip-av">' + pipeInitials(c.name) + '</span>'
+                            + c.name + ' &middot; ' + pipeStageLbl(c.stage)
+                            + (c.apply_date ? ' &middot; ' + c.apply_date : '')
+                            + '</span>';
+                    });
+
+                    html += '</div></div></div>';
+                });
+
+                html += '</div></div>';
+            }
+
+            Object.keys(bySchool).sort().forEach(school => {
+                const sp = filtered.filter(p => p.school === school);
+                const openCnt = sp.filter(p => p.status_26_27 === 'Open').length;
+                const possCnt = sp.filter(p => p.status_26_27 === 'Possible Open').length;
+
+                html += '<div class="mb-10">'
+                    + '<div class="flex items-baseline gap-2.5 mb-3 pb-2.5" style="border-bottom:2px solid #002f60">'
+                    + '<h2 class="text-xl font-bold" style="color:#002f60">' + school + '</h2>'
+                    + '<span class="text-xs text-slate-500">' + sp.length + ' opening' + (sp.length !== 1 ? 's' : '') + ' &middot; ' + openCnt + ' confirmed &middot; ' + possCnt + ' possible</span>'
+                    + '</div>';
+
+                catOrder.filter(c => bySchool[school][c]).forEach(cat => {
+                    const rows = bySchool[school][cat];
+                    const catLabelClass = cat === 'Incoming' ? 'background:#fff7ed;color:#c2410c;border:1px solid #fed7aa' : 'background:#e8edf8';
+                    html += '<div class="mb-4">'
+                        + '<span class="inline-block text-[10px] font-bold tracking-widest uppercase mb-2 px-2.5 py-1 rounded" style="' + catLabelClass + '">'
+                        + (cat === 'Incoming' ? 'Incoming Candidates' : cat) + '</span>'
+                        + '<table class="pipe-table"><thead><tr>'
+                        + '<th style="width:180px">Position</th>'
+                        + '<th style="width:85px">Subject</th>'
+                        + '<th style="width:105px">Grade / Level</th>'
+                        + '<th style="width:100px">Status</th>'
+                        + '<th style="width:130px">Incumbent</th>'
+                        + '<th style="width:140px">Phone Screen</th>'
+                        + '<th style="width:140px">Finalist(s)</th>'
+                        + '<th>Pipeline</th>'
+                        + '</tr></thead><tbody>';
+
+                    rows.forEach(p => {
+                        const incumbentCell = buildPipeIncumbentCell(p);
+                        const statusBadge = p.status_26_27 === 'Open'
+                            ? '<span class="pipe-badge pb-open"><span class="pipe-badge-dot"></span>Confirmed</span>'
+                            : '<span class="pipe-badge pb-possible"><span class="pipe-badge-dot"></span>Possible</span>';
+
+                        const candidates = getPipeCandidates(p);
+                        const screens = candidates.filter(c => c.stage === 'screen');
+                        const screenCell = screens.length
+                            ? screens.map(c => buildPipeChipClickable(p.position_id, c, false)).join('')
+                            : '<span class="pipe-no-cands">None yet</span>';
+
+                        const finalists = candidates.filter(c => c.stage === 'interview');
+                        const finalistCell = finalists.length
+                            ? finalists.map(c => buildPipeChipClickable(p.position_id, c, true)).join('')
+                            : '<span class="pipe-no-cands">None yet</span>';
+
+                        const q = (document.getElementById('pipeSearch') ? document.getElementById('pipeSearch').value : '').toLowerCase();
+                        const pipelineChips = candidates.length === 0
+                            ? '<span class="pipe-no-cands">No candidates yet</span>'
+                            : candidates.map(c => {
+                                const unscheduled = (c.stage === 'interview' && !c.date) ? ' pipe-chip-unscheduled' : '';
+                                const hl = (q && c.name.toLowerCase().includes(q)) ? 'outline:2px solid #e47727;' : '';
+                                const trailer = (c.stage === 'interview' && !c.date ? ' &#9888;' : '') + (c.date ? ' &#128197;' : '');
+                                return '<span class="pipe-chip ' + pipeChipCls(c.stage) + unscheduled + '" title="Click to edit" style="cursor:pointer;' + hl + '" onclick="event.stopPropagation();openPipeProfile(\'' + p.position_id + '\',\'' + c.id + '\')">'
+                                    + '<span class="pipe-chip-av">' + pipeInitials(c.name) + '</span>' + c.name + ' &middot; ' + pipeStageLbl(c.stage) + trailer + '</span>';
+                            }).join('');
+
+                        html += '<tr onclick="openPipeJobModal(\'' + p.position_id + '\')">'
+                            + '<td><span class="pipe-pos-title">' + (p.job_title || '') + ' <span class="pipe-row-edit-hint">&#9998; edit</span></span></td>'
+                            + '<td class="text-slate-600 text-xs">' + (p.subject || '—') + '</td>'
+                            + '<td class="text-slate-600 text-xs">' + (p.grade_level || '—') + '</td>'
+                            + '<td>' + statusBadge + '</td>'
+                            + '<td>' + incumbentCell + '</td>'
+                            + '<td style="max-width:180px">' + screenCell + '</td>'
+                            + '<td style="max-width:180px">' + finalistCell + '</td>'
+                            + '<td style="max-width:360px">' + pipelineChips
+                            + '<br/><button class="pipe-add-btn" onclick="event.stopPropagation();openPipeAddCand(\'' + p.position_id + '\')">+ Add</button>'
+                            + '</td></tr>';
+                    });
+
+                    html += '</tbody></table></div>';
+                });
+
+                html += '</div>';
+            });
+
+            document.getElementById('pipeContent').innerHTML = html;
+        }
+
+        // ── Add Candidate Modal ──
+        function openPipeAddCand(positionId) {
+            pipePendingAddId = positionId;
+            const p = pipePositions.find(x => x.position_id === positionId);
+            const label = p ? (p.school + ' — ' + p.job_title + (p.subject ? ' (' + p.subject + ')' : '')) : positionId;
+            document.getElementById('pipeAddCandSub').textContent = label;
+            document.getElementById('pipeAddName').value = '';
+            document.getElementById('pipeAddNotes').value = '';
+            document.getElementById('pipeAddStage').value = 'new';
+            document.getElementById('pipeAddDate').value = '';
+            document.getElementById('pipeAddTime').value = '';
+            document.getElementById('pipeAddSuggestions').style.display = 'none';
+            document.getElementById('pipeAddCandOverlay').classList.add('open');
+            document.getElementById('pipeAddName').focus();
+        }
+        (function() {
+            const nameInput = document.getElementById('pipeAddName');
+            const sugBox = document.getElementById('pipeAddSuggestions');
+            nameInput.addEventListener('input', function() {
+                const q = this.value.trim().toLowerCase();
+                if (q.length < 1) { sugBox.style.display = 'none'; return; }
+                const matches = pipeIncomingCandidates.filter(c => c.name.toLowerCase().includes(q)).slice(0, 15);
+                if (!matches.length) { sugBox.style.display = 'none'; sugBox.innerHTML = ''; return; }
+                sugBox.innerHTML = '';
+                matches.forEach(c => {
+                    const row = document.createElement('div');
+                    row.style.cssText = 'padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center';
+                    row.innerHTML = '<span><strong>' + c.name + '</strong></span>'
+                        + '<span style="font-size:11px;color:#64748b">' + pipeStageLbl(c.stage) + (c.job_title ? ' &middot; ' + c.job_title : '') + '</span>';
+                    row.addEventListener('mousedown', function(e) {
+                        e.preventDefault();
+                        nameInput.value = c.name;
+                        document.getElementById('pipeAddStage').value = c.stage;
+                        sugBox.style.display = 'none';
+                    });
+                    row.addEventListener('mouseenter', function() { this.style.background = '#e2e8f0'; });
+                    row.addEventListener('mouseleave', function() { this.style.background = ''; });
+                    sugBox.appendChild(row);
+                });
+                sugBox.style.display = 'block';
+            });
+            nameInput.addEventListener('focus', function() { if (this.value.trim().length >= 1) this.dispatchEvent(new Event('input')); });
+            document.addEventListener('click', function(e) {
+                if (!sugBox.contains(e.target) && e.target !== nameInput) sugBox.style.display = 'none';
+            });
+        })();
+        function closePipeAddCand() { document.getElementById('pipeAddCandOverlay').classList.remove('open'); pipePendingAddId = null; }
+        document.getElementById('pipeAddCandOverlay').addEventListener('click', e => { if (e.target.id === 'pipeAddCandOverlay') closePipeAddCand(); });
+
+        async function savePipeCandidate() {
+            const name = document.getElementById('pipeAddName').value.trim();
+            if (!name) { document.getElementById('pipeAddName').focus(); return; }
+            if (!pipePendingAddId) return;
+
+            const body = {
+                position_id: pipePendingAddId,
+                name: name,
+                stage: document.getElementById('pipeAddStage').value,
+                notes: document.getElementById('pipeAddNotes').value.trim(),
+                date: document.getElementById('pipeAddDate').value || null,
+                time: document.getElementById('pipeAddTime').value || null,
+            };
+
+            try {
+                pipeSaveStatus('saving');
+                const res = await fetch('/api/pipeline/candidates', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (res.ok) {
+                    closePipeAddCand();
+                    pipeLoaded = false;
+                    await loadPipelineData();
+                    pipeSaveStatus('saved');
+                    pipeShowToast('Added ' + name + ' to pipeline');
+                } else {
+                    const err = await res.json();
+                    pipeSaveStatus('error');
+                    alert(err.error || 'Failed to add candidate');
+                }
+            } catch (e) { pipeSaveStatus('error'); alert('Error adding candidate: ' + e.message); }
+        }
+
+        // ── Job Detail Modal ──
+        function openPipeJobModal(positionId) {
+            pipeCurrentJobId = positionId;
+            const p = pipePositions.find(x => x.position_id === positionId);
+            if (!p) return;
+            pipeCurrentJobLabel = p.school + ' — ' + p.job_title + ' (' + (p.subject || '') + ')';
+            document.getElementById('pipeJobTitle').textContent = (p.job_title || '') + (p.subject ? ' · ' + p.subject : '');
+            document.getElementById('pipeJobMeta').textContent = (p.school || '') + (p.grade_level ? ' · ' + p.grade_level : '');
+            refreshPipeJobModal(p);
+            document.getElementById('pipeJobOverlay').classList.add('open');
+        }
+
+        function refreshPipeJobModal(p) {
+            document.getElementById('pipeJobOptOpen').className = 'pipe-status-opt' + (p.status_26_27 === 'Open' ? ' sel-open' : '');
+            document.getElementById('pipeJobOptPossible').className = 'pipe-status-opt' + (p.status_26_27 === 'Possible Open' ? ' sel-possible' : '');
+
+            const candidates = getPipeCandidates(p);
+            const container = document.getElementById('pipeJobCandidates');
+            if (!candidates.length) {
+                container.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b;font-size:13px;font-style:italic">No candidates yet — use the button below to add one.</div>';
+                return;
+            }
+            container.innerHTML = candidates.map(c => {
+                const isManual = c.source === 'manual';
+                return '<div class="pipe-cand-row">'
+                    + '<span class="pipe-chip ' + pipeChipCls(c.stage) + '" style="flex-shrink:0"><span class="pipe-chip-av">' + pipeInitials(c.name) + '</span></span>'
+                    + '<span class="pipe-cand-name">' + c.name + '</span>'
+                    + (isManual ? '<input type="text" class="pipe-cand-notes-input" value="' + ((c.notes||'').replace(/"/g,'&quot;')) + '" placeholder="Add notes..." onchange="updatePipeCandNotes(\'' + c.id + '\',this.value)" />' : '<span class="pipe-cand-notes-input" style="color:#94a3b8;font-style:italic">' + (c.notes || '') + '</span>')
+                    + (isManual ? '<select class="pipe-stage-select" onchange="updatePipeCandStage(\'' + c.id + '\',this.value)">'
+                        + ['new','screen','interview','hired','pool'].map(s => '<option value="' + s + '" ' + (c.stage===s?'selected':'') + '>' + pipeStageLbl(s) + '</option>').join('')
+                        + '</select>' : '<span class="pipe-stage-select" style="cursor:default">' + pipeStageLbl(c.stage) + '</span>')
+                    + (isManual ? '<input type="date" class="pipe-stage-select" style="width:130px" value="' + (c.date||'') + '" onchange="updatePipeCandDate(\'' + c.id + '\',this.value)" />' : '')
+                    + (isManual ? '<input type="time" class="pipe-stage-select" style="width:96px" value="' + (c.time||'') + '" onchange="updatePipeCandTime(\'' + c.id + '\',this.value)" />' : '')
+                    + (isManual && c.date ? '<button class="pipe-del-btn" style="color:#16a34a;font-size:13px" onclick="pipeSendCalInviteFromRow(\'' + p.position_id + '\',\'' + c.id + '\')" title="Google Calendar invite">&#128197;</button>' : '')
+                    + (isManual ? '<button class="pipe-del-btn" style="color:#93c5fd;font-size:13px" onclick="openPipeMoveModal(\'' + p.position_id + '\',\'' + c.id + '\',\'' + c.name.replace(/'/g,"\\'") + '\')" title="Move to another opening">&#8644;</button>' : '')
+                    + (isManual ? '<button class="pipe-del-btn" onclick="deletePipeCand(\'' + c.id + '\')" title="Remove">&#10005;</button>' : '')
+                    + '</div>';
+            }).join('');
+        }
+
+        async function setPipeJobStatus(status) {
+            if (!pipeCurrentJobId) return;
+            try {
+                await fetch('/api/positions/' + pipeCurrentJobId, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status_26_27: status })
+                });
+                pipeLoaded = false;
+                await loadPipelineData();
+                const p = pipePositions.find(x => x.position_id === pipeCurrentJobId);
+                if (p) refreshPipeJobModal(p);
+            } catch (e) { console.error('Error updating status:', e); }
+        }
+
+        async function updatePipeCandStage(candId, newStage) {
+            try {
+                await fetch('/api/pipeline/candidates/' + candId, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ stage: newStage })
+                });
+                pipeLoaded = false;
+                await loadPipelineData();
+                const p = pipePositions.find(x => x.position_id === pipeCurrentJobId);
+                if (p) refreshPipeJobModal(p);
+            } catch (e) { console.error('Error updating stage:', e); }
+        }
+
+        async function updatePipeCandNotes(candId, val) {
+            try {
+                await fetch('/api/pipeline/candidates/' + candId, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ notes: val.trim() })
+                });
+            } catch (e) { console.error('Error updating notes:', e); }
+        }
+
+        async function updatePipeCandDate(candId, val) {
+            try {
+                await fetch('/api/pipeline/candidates/' + candId, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ date: val || '' })
+                });
+                pipeLoaded = false;
+                await loadPipelineData();
+                const p = pipePositions.find(x => x.position_id === pipeCurrentJobId);
+                if (p) refreshPipeJobModal(p);
+                if (pipeSubView === 'calendar') renderPipeCalendar();
+            } catch (e) { console.error('Error updating date:', e); }
+        }
+
+        async function updatePipeCandTime(candId, val) {
+            try {
+                await fetch('/api/pipeline/candidates/' + candId, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ time: val || '' })
+                });
+                if (pipeSubView === 'calendar') { pipeLoaded = false; await loadPipelineData(); renderPipeCalendar(); }
+            } catch (e) { console.error('Error updating time:', e); }
+        }
+
+        async function deletePipeCand(candId) {
+            try {
+                await fetch('/api/pipeline/candidates/' + candId, { method: 'DELETE' });
+                pipeLoaded = false;
+                await loadPipelineData();
+                const p = pipePositions.find(x => x.position_id === pipeCurrentJobId);
+                if (p) refreshPipeJobModal(p);
+                pipeShowToast('Candidate removed');
+            } catch (e) { console.error('Error deleting:', e); }
+        }
+
+        function closePipeJobModal() { document.getElementById('pipeJobOverlay').classList.remove('open'); pipeCurrentJobId = null; }
+        document.getElementById('pipeJobOverlay').addEventListener('click', e => { if (e.target.id === 'pipeJobOverlay') closePipeJobModal(); });
+
+        // ── Candidate Profile Modal ──
+        function openPipeProfile(positionId, candId) {
+            const p = pipePositions.find(x => x.position_id === positionId);
+            if (!p) return;
+            const cands = getPipeCandidates(p);
+            const c = cands.find(x => String(x.id) === String(candId));
+            if (!c) return;
+
+            pipeProfileState = { positionId, candId };
+            document.getElementById('pipeProfileAvatar').textContent = pipeInitials(c.name);
+            document.getElementById('pipeProfileName').textContent = c.name;
+            document.getElementById('pipeProfileOpening').textContent = (p.school || '') + ' · ' + (p.job_title || '') + (p.subject ? ' — ' + p.subject : '');
+            document.getElementById('pipeProfileStage').value = c.stage;
+            document.getElementById('pipeProfileDate').value = c.date || '';
+            document.getElementById('pipeProfileTime').value = c.time || '';
+            document.getElementById('pipeProfileNotes').value = c.notes || '';
+            document.getElementById('pipeProfileOverlay').classList.add('open');
+        }
+
+        async function savePipeProfile() {
+            const c = pipeProfileState;
+            if (!c.candId) return;
+            try {
+                pipeSaveStatus('saving');
+                await fetch('/api/pipeline/candidates/' + c.candId, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        stage: document.getElementById('pipeProfileStage').value,
+                        date: document.getElementById('pipeProfileDate').value || '',
+                        time: document.getElementById('pipeProfileTime').value || '',
+                        notes: document.getElementById('pipeProfileNotes').value.trim(),
+                    })
+                });
+                closePipeProfile();
+                pipeLoaded = false;
+                await loadPipelineData();
+                if (pipeSubView === 'calendar') renderPipeCalendar();
+                pipeSaveStatus('saved');
+                pipeShowToast('Profile saved');
+            } catch (e) { pipeSaveStatus('error'); alert('Error saving profile: ' + e.message); }
+        }
+
+        async function pipeRemoveFromProfile() {
+            if (!confirm('Remove this candidate from the opening?')) return;
+            const c = pipeProfileState;
+            if (!c.candId) return;
+            try {
+                pipeSaveStatus('saving');
+                await fetch('/api/pipeline/candidates/' + c.candId, { method: 'DELETE' });
+                closePipeProfile();
+                pipeLoaded = false;
+                await loadPipelineData();
+                pipeSaveStatus('saved');
+                pipeShowToast('Candidate removed');
+            } catch (e) { pipeSaveStatus('error'); alert('Error removing: ' + e.message); }
+        }
+
+        function pipeProfileToMove() {
+            const p = pipePositions.find(x => x.position_id === pipeProfileState.positionId);
+            if (!p) return;
+            const cands = getPipeCandidates(p);
+            const c = cands.find(x => String(x.id) === String(pipeProfileState.candId));
+            if (!c) return;
+            closePipeProfile();
+            openPipeMoveModal(pipeProfileState.positionId, pipeProfileState.candId, c.name);
+        }
+
+        function pipeSendCalendarInvite() {
+            const p = pipePositions.find(x => x.position_id === pipeProfileState.positionId);
+            if (!p) return;
+            const cands = getPipeCandidates(p);
+            const c = cands.find(x => String(x.id) === String(pipeProfileState.candId));
+            if (!c) return;
+            const date = document.getElementById('pipeProfileDate').value;
+            const time = document.getElementById('pipeProfileTime').value;
+            if (!date) { alert('Please enter an interview date first.'); return; }
+            pipeOpenCalendarInvite(c.name, p, date, time);
+        }
+
+        function pipeSendCalInviteFromRow(positionId, candId) {
+            const p = pipePositions.find(x => x.position_id === positionId);
+            if (!p) return;
+            const cands = getPipeCandidates(p);
+            const c = cands.find(x => String(x.id) === String(candId));
+            if (!c || !c.date) return;
+            pipeOpenCalendarInvite(c.name, p, c.date, c.time);
+        }
+
+        function pipeOpenCalendarInvite(name, p, date, time) {
+            const title = encodeURIComponent('Interview: ' + name + ' — ' + (p.job_title || '') + (p.subject ? ' (' + p.subject + ')' : ''));
+            const loc = encodeURIComponent((p.school || '') + ', FirstLine Schools, New Orleans, LA');
+            const desc = encodeURIComponent('Candidate: ' + name + '\nSchool: ' + (p.school || '') + '\nRole: ' + (p.job_title || '') + (p.subject ? ' — ' + p.subject : '') + (p.grade_level ? ', ' + p.grade_level : '') + '\n\nNote: Add candidate email as a guest before sending.');
+            let startDT, endDT;
+            if (time) {
+                const [y,m,d2] = date.split('-');
+                const [h,min] = time.split(':');
+                const endH = String(parseInt(h) + 1).padStart(2,'0');
+                startDT = y+m+d2+'T'+h+min+'00';
+                endDT = y+m+d2+'T'+endH+min+'00';
+            } else {
+                const [y,m,d2] = date.split('-');
+                startDT = y+m+d2;
+                endDT = y+m+d2;
+            }
+            window.open('https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + title + '&dates=' + startDT + '/' + endDT + '&details=' + desc + '&location=' + loc + '&add=', '_blank');
+        }
+
+        function closePipeProfile() { document.getElementById('pipeProfileOverlay').classList.remove('open'); pipeProfileState = { positionId: null, candId: null }; }
+        document.getElementById('pipeProfileOverlay').addEventListener('click', e => { if (e.target.id === 'pipeProfileOverlay') closePipeProfile(); });
+
+        // ── Move Candidate Modal ──
+        function openPipeMoveModal(positionId, candId, candName) {
+            pipeMoveState = { positionId, candId };
+            document.getElementById('pipeMoveCandName').textContent = 'Moving: ' + candName;
+            const schools = [...new Set(pipePositions.map(p => p.school))].sort();
+            document.getElementById('pipeMoveSchool').innerHTML = schools.map(s => '<option value="' + s + '">' + s + '</option>').join('');
+            const current = pipePositions.find(x => x.position_id === positionId);
+            if (current) document.getElementById('pipeMoveSchool').value = current.school;
+            populatePipeMoveRoles();
+            document.getElementById('pipeMoveOverlay').classList.add('open');
+        }
+
+        function populatePipeMoveRoles() {
+            const school = document.getElementById('pipeMoveSchool').value;
+            const schoolPositions = pipePositions.filter(p => p.school === school && p.position_id !== pipeMoveState.positionId);
+            document.getElementById('pipeMoveRole').innerHTML = schoolPositions.map(p =>
+                '<option value="' + p.position_id + '">' + (p.job_title || '') + (p.subject ? ' — ' + p.subject : '') + (p.grade_level ? ', ' + p.grade_level : '') + '</option>'
+            ).join('');
+        }
+
+        async function confirmPipeMove() {
+            const targetId = document.getElementById('pipeMoveRole').value;
+            const newStage = document.getElementById('pipeMoveStage').value;
+            const removeFromCurrent = document.getElementById('pipeMoveAndRemove').checked;
+            if (!targetId) return;
+
+            // Duplicate detection: check if candidate already exists at destination
+            const fromPos = pipePositions.find(x => x.position_id === pipeMoveState.positionId);
+            const toPos = pipePositions.find(x => x.position_id === targetId);
+            if (fromPos && toPos) {
+                const fromCands = getPipeCandidates(fromPos);
+                const toCands = getPipeCandidates(toPos);
+                const movingCand = fromCands.find(c => String(c.id) === String(pipeMoveState.candId));
+                if (movingCand) {
+                    const alreadyThere = toCands.some(c => c.name.toLowerCase() === movingCand.name.toLowerCase());
+                    if (alreadyThere) {
+                        pipeShowToast(movingCand.name + ' is already at that opening');
+                        return;
+                    }
+                }
+            }
+
+            try {
+                pipeSaveStatus('saving');
+                await fetch('/api/pipeline/candidates/move', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        candidate_id: pipeMoveState.candId,
+                        new_position_id: targetId,
+                        stage: newStage,
+                        remove_from_current: removeFromCurrent
+                    })
+                });
+                closePipeMoveModal();
+                pipeLoaded = false;
+                await loadPipelineData();
+                if (pipeCurrentJobId) {
+                    const p = pipePositions.find(x => x.position_id === pipeCurrentJobId);
+                    if (p) refreshPipeJobModal(p);
+                }
+                pipeSaveStatus('saved');
+                pipeShowToast('Candidate moved successfully');
+            } catch (e) { pipeSaveStatus('error'); alert('Error moving candidate: ' + e.message); }
+        }
+
+        function closePipeMoveModal() { document.getElementById('pipeMoveOverlay').classList.remove('open'); pipeMoveState = { positionId: null, candId: null }; }
+        document.getElementById('pipeMoveOverlay').addEventListener('click', e => { if (e.target.id === 'pipeMoveOverlay') closePipeMoveModal(); });
+
+        // ── Add Opening Modal ──
+        function openPipeAddOpening() {
+            document.getElementById('pipeAoTitle').value = '';
+            document.getElementById('pipeAoSubject').value = '';
+            document.getElementById('pipeAoGrade').value = '';
+            document.getElementById('pipeAoSchool').value = 'Arthur Ashe';
+            document.getElementById('pipeAoCat').value = 'Teacher';
+            document.getElementById('pipeAoStatus').value = 'Open';
+            document.getElementById('pipeAddOpeningOverlay').classList.add('open');
+        }
+
+        async function savePipeNewOpening() {
+            const title = document.getElementById('pipeAoTitle').value.trim();
+            if (!title) { document.getElementById('pipeAoTitle').focus(); return; }
+            try {
+                pipeSaveStatus('saving');
+                const res = await fetch('/api/positions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        school: document.getElementById('pipeAoSchool').value,
+                        job_category: document.getElementById('pipeAoCat').value,
+                        job_title: title,
+                        subject: document.getElementById('pipeAoSubject').value.trim() || '',
+                        grade_level: document.getElementById('pipeAoGrade').value.trim() || '',
+                        current_status: 'Open',
+                        status_26_27: document.getElementById('pipeAoStatus').value,
+                        start_year: '26-27',
+                    })
+                });
+                if (res.ok) {
+                    closePipeAddOpening();
+                    pipeLoaded = false;
+                    await loadPipelineData();
+                    pipeSaveStatus('saved');
+                    pipeShowToast('"' + title + '" added');
+                } else {
+                    const err = await res.json();
+                    pipeSaveStatus('error');
+                    alert(err.error || 'Failed to add opening');
+                }
+            } catch (e) { pipeSaveStatus('error'); alert('Error: ' + e.message); }
+        }
+
+        function closePipeAddOpening() { document.getElementById('pipeAddOpeningOverlay').classList.remove('open'); }
+        document.getElementById('pipeAddOpeningOverlay').addEventListener('click', e => { if (e.target.id === 'pipeAddOpeningOverlay') closePipeAddOpening(); });
+
+        // ── Assign Incoming Candidate to Position ──
+        let pipeAssignState = { candidateId: null, name: '', stage: 'new', applyDate: '', jobTitle: '' };
+
+        function openPipeAssignModal(candId, name, stage, applyDate, jobTitle) {
+            pipeAssignState = { candidateId: candId, name, stage, applyDate, jobTitle };
+            document.getElementById('pipeAssignCandInfo').innerHTML = '<strong>' + name + '</strong> &middot; ' + pipeStageLbl(stage) + (applyDate ? ' &middot; Applied ' + applyDate : '') + '<br><span style="font-size:12px;color:#64748b">From: ' + jobTitle + '</span>';
+            document.getElementById('pipeAssignStage').value = stage;
+            document.getElementById('pipeAssignNotes').value = jobTitle ? 'Applied for: ' + jobTitle : '';
+
+            // Populate school dropdown
+            const schools = [...new Set(pipePositions.map(p => p.school))].sort();
+            document.getElementById('pipeAssignSchool').innerHTML = schools.map(s => '<option value="' + s + '">' + s + '</option>').join('');
+            populatePipeAssignPositions();
+            document.getElementById('pipeAssignOverlay').classList.add('open');
+        }
+
+        function populatePipeAssignPositions() {
+            const school = document.getElementById('pipeAssignSchool').value;
+            const positions = pipePositions.filter(p => p.school === school);
+            document.getElementById('pipeAssignPosition').innerHTML = positions.map(p =>
+                '<option value="' + p.position_id + '">' + (p.job_title || '') + (p.subject ? ' — ' + p.subject : '') + (p.grade_level ? ', ' + p.grade_level : '') + '</option>'
+            ).join('');
+        }
+
+        async function confirmPipeAssign() {
+            const positionId = document.getElementById('pipeAssignPosition').value;
+            const stage = document.getElementById('pipeAssignStage').value;
+            const notes = document.getElementById('pipeAssignNotes').value.trim();
+            if (!positionId) return;
+
+            // Duplicate check
+            const targetPos = pipePositions.find(p => p.position_id === positionId);
+            if (targetPos) {
+                const existing = getPipeCandidates(targetPos).find(c => c.name.toLowerCase() === pipeAssignState.name.toLowerCase());
+                if (existing) {
+                    pipeShowToast(pipeAssignState.name + ' is already assigned to that position');
+                    return;
+                }
+            }
+
+            try {
+                pipeSaveStatus('saving');
+                await fetch('/api/pipeline/candidates', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        position_id: positionId,
+                        name: pipeAssignState.name,
+                        stage: stage,
+                        notes: notes,
+                    })
+                });
+                closePipeAssign();
+                pipeLoaded = false;
+                await loadPipelineData();
+                pipeSaveStatus('saved');
+                pipeShowToast(pipeAssignState.name + ' assigned to ' + (targetPos ? targetPos.job_title : 'position'));
+            } catch (e) { pipeSaveStatus('error'); alert('Error: ' + e.message); }
+        }
+
+        function closePipeAssign() { document.getElementById('pipeAssignOverlay').classList.remove('open'); pipeAssignState = { candidateId: null, name: '', stage: 'new', applyDate: '', jobTitle: '' }; }
+        document.getElementById('pipeAssignOverlay').addEventListener('click', e => { if (e.target.id === 'pipeAssignOverlay') closePipeAssign(); });
+
+        // ── Calendar ──
+        const PIPE_SCHOOL_COLORS = {
+            'Arthur Ashe': 'pipe-school-color-aa', 'Langston Hughes': 'pipe-school-color-lh',
+            'Phillis Wheatley': 'pipe-school-color-pw', 'Samuel J Green': 'pipe-school-color-sg', 'Network': 'pipe-school-color-net',
+        };
+        const PIPE_SCHOOL_DOT_COLORS = {
+            'Arthur Ashe': '#3b82f6', 'Langston Hughes': '#d97706',
+            'Phillis Wheatley': '#7c3aed', 'Samuel J Green': '#16a34a', 'Network': '#64748b',
+        };
+
+        function pipeGetMonday(d) {
+            const date = new Date(d);
+            const day = date.getDay();
+            const diff = day === 0 ? -6 : 1 - day;
+            date.setDate(date.getDate() + diff);
+            date.setHours(0,0,0,0);
+            return date;
+        }
+
+        function pipeCalPrevWeek() { pipeCalWeekStart.setDate(pipeCalWeekStart.getDate() - 7); renderPipeCalendar(); }
+        function pipeCalNextWeek() { pipeCalWeekStart.setDate(pipeCalWeekStart.getDate() + 7); renderPipeCalendar(); }
+        function pipeCalGoToday() { pipeCalWeekStart = pipeGetMonday(new Date()); renderPipeCalendar(); }
+
+        function pipeIsSameDay(d1, d2) {
+            return d1.getFullYear()===d2.getFullYear() && d1.getMonth()===d2.getMonth() && d1.getDate()===d2.getDate();
+        }
+
+        function pipeGetAllInterviews() {
+            const events = [];
+            pipePositions.forEach(p => {
+                const cands = getPipeCandidates(p);
+                cands.forEach(c => {
+                    if (c.date) {
+                        events.push({ candidate: c, position: p, date: new Date(c.date + 'T00:00:00') });
+                    }
+                });
+            });
+            return events;
+        }
+
+        function renderPipeCalendar() {
+            if (!pipeCalWeekStart) pipeCalWeekStart = pipeGetMonday(new Date());
+            const weekEnd = new Date(pipeCalWeekStart);
+            weekEnd.setDate(weekEnd.getDate() + 4);
+            document.getElementById('pipeCalWeekLabel').textContent =
+                pipeCalWeekStart.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' – ' + weekEnd.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+
+            const schools = [...new Set(pipePositions.map(p => p.school))].sort();
+            document.getElementById('pipeCalSchoolFilter').innerHTML = schools.map(s =>
+                '<button class="pipe-filter-btn ' + (pipeCalSchoolFilters.has(s)?'active':'') + '" onclick="togglePipeCalSchool(\'' + s + '\')">' + (s.split(' ')[0]) + '</button>'
+            ).join('');
+
+            document.getElementById('pipeCalLegend').innerHTML = schools.map(s =>
+                '<div class="pipe-cal-legend-item"><span class="pipe-cal-legend-dot ' + (PIPE_SCHOOL_COLORS[s]||'pipe-school-color-net') + '"></span>' + s + '</div>'
+            ).join('');
+
+            const allEvents = pipeGetAllInterviews();
+            const weekDays = Array.from({length:5},(_,i)=>{ const d=new Date(pipeCalWeekStart); d.setDate(d.getDate()+i); return d; });
+            const today = new Date(); today.setHours(0,0,0,0);
+            const hours = Array.from({length:9},(_,i)=>i+8);
+
+            let html = '<div class="pipe-cal-grid">';
+            html += '<div class="pipe-cal-col-header" style="background:#001a3d"></div>';
+            weekDays.forEach(d => {
+                const isToday = pipeIsSameDay(d, today);
+                html += '<div class="pipe-cal-col-header ' + (isToday?'today-col':'') + '"><div class="day-name">' + d.toLocaleDateString('en-US',{weekday:'short'}).toUpperCase() + '</div><div class="day-num">' + d.getDate() + '</div></div>';
+            });
+
+            hours.forEach(hour => {
+                const timeLabel = hour < 12 ? hour+'am' : hour === 12 ? '12pm' : (hour-12)+'pm';
+                html += '<div class="pipe-cal-time-label">' + timeLabel + '</div>';
+                weekDays.forEach(day => {
+                    const dayEvents = allEvents.filter(e => {
+                        if (!pipeCalSchoolFilters.has(e.position.school)) return false;
+                        if (!pipeIsSameDay(e.date, day)) return false;
+                        if (!e.candidate.time) return false;
+                        return parseInt(e.candidate.time.split(':')[0]) === hour;
+                    });
+                    const untimedEvents = hour === 8 ? allEvents.filter(e => {
+                        if (!pipeCalSchoolFilters.has(e.position.school)) return false;
+                        if (!pipeIsSameDay(e.date, day)) return false;
+                        return !e.candidate.time;
+                    }) : [];
+                    const all = [...dayEvents, ...untimedEvents];
+                    html += '<div class="pipe-cal-cell">';
+                    all.forEach(e => {
+                        const colorCls = PIPE_SCHOOL_COLORS[e.position.school] || 'pipe-school-color-net';
+                        const timeStr = e.candidate.time ? new Date('2000-01-01T'+e.candidate.time).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : 'Time TBD';
+                        html += '<div class="pipe-cal-event ' + colorCls + '" onclick="openPipeJobModal(\'' + e.position.position_id + '\')" title="' + e.candidate.name + ' — ' + e.position.school + '">'
+                            + '<div class="pipe-cal-event-name">' + e.candidate.name + '</div>'
+                            + '<div class="pipe-cal-event-role">' + (e.position.job_title||'') + (e.position.subject?' · '+e.position.subject:'') + '</div>'
+                            + '<div class="pipe-cal-event-time">' + timeStr + '</div></div>';
+                    });
+                    html += '</div>';
+                });
+            });
+            html += '</div>';
+
+            const weekEvents = allEvents.filter(e => {
+                if (!pipeCalSchoolFilters.has(e.position.school)) return false;
+                return weekDays.some(d => pipeIsSameDay(e.date, d));
+            });
+            if (weekEvents.length === 0) {
+                html += '<div class="pipe-no-interviews"><div class="pipe-no-interviews-icon">&#128197;</div><div class="pipe-no-interviews-msg">No interviews scheduled this week</div><div class="pipe-no-interviews-sub">Add interview dates to candidates from the Pipeline view or by clicking any job row.</div></div>';
+            }
+            document.getElementById('pipeCalGrid').innerHTML = html;
+        }
+
+        function togglePipeCalSchool(school) {
+            if (pipeCalSchoolFilters.has(school)) {
+                if (pipeCalSchoolFilters.size > 1) pipeCalSchoolFilters.delete(school);
+            } else {
+                pipeCalSchoolFilters.add(school);
+            }
+            renderPipeCalendar();
+        }
+
+        // ── Insights ──
+        let pipeInsightsLoaded = false;
+        async function loadPipeInsights() {
+            if (pipeInsightsLoaded) return;
+            try {
+                const res = await fetch('/api/pipeline/insights');
+                const data = await res.json();
+                renderPipeInsights(data);
+                pipeInsightsLoaded = true;
+            } catch (e) {
+                document.getElementById('pipeInsightsContent').innerHTML = '<div class="text-center py-10 text-red-500">Failed to load insights.</div>';
+            }
+        }
+
+        function renderPipeInsights(data) {
+            const schools = data.schools || [];
+            const cats = data.categories || [];
+            const stages = data.stage_distribution || [];
+            const activity = data.recent_activity || [];
+
+            // Stage distribution summary
+            const activeStages = stages.filter(s => {
+                const low = (s.raw_stage || '').toLowerCase();
+                return !low.includes('not hired') && !low.includes('not a good fit') && !low.includes('does not meet') && !low.includes('international') && !low.includes('another') && !low.includes('withdrew');
+            });
+            const rejectedStages = stages.filter(s => {
+                const low = (s.raw_stage || '').toLowerCase();
+                return low.includes('not hired') || low.includes('not a good fit') || low.includes('does not meet') || low.includes('international') || low.includes('another') || low.includes('withdrew');
+            });
+
+            let html = '';
+
+            // School fill rate cards
+            html += '<h3 class="text-sm font-bold text-slate-700 mb-3">Hiring Status by School</h3>';
+            html += '<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">';
+            schools.forEach(s => {
+                const total = (s.open_positions || 0) + (s.filled_or_offer || 0) + (s.returning || 0);
+                const fillPct = total > 0 ? Math.round(((s.returning || 0) + (s.filled_or_offer || 0)) / total * 100) : 0;
+                html += '<div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">'
+                    + '<div class="text-sm font-bold text-[#002f60] mb-1">' + (s.school || 'Unknown') + '</div>'
+                    + '<div class="text-2xl font-bold text-[#002f60]">' + (s.open_positions || 0) + ' <span class="text-sm font-normal text-slate-500">open</span></div>'
+                    + '<div class="text-xs text-slate-500 mt-1">' + (s.confirmed_open || 0) + ' confirmed · ' + (s.possible_open || 0) + ' possible</div>'
+                    + '<div class="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:' + fillPct + '%;background:linear-gradient(to right,#22c55e,#16a34a)"></div></div>'
+                    + '<div class="text-[10px] text-slate-400 mt-1">' + fillPct + '% staffed for 26-27 (' + (s.returning || 0) + ' returning + ' + (s.filled_or_offer || 0) + ' filled)</div>'
+                    + '</div>';
+            });
+            html += '</div>';
+
+            // Category breakdown
+            html += '<h3 class="text-sm font-bold text-slate-700 mb-3">Open Positions by Category</h3>';
+            html += '<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">';
+            cats.forEach(c => {
+                const total = (c.confirmed || 0) + (c.possible || 0);
+                html += '<div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">'
+                    + '<div class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">' + (c.job_category || 'Other') + '</div>'
+                    + '<div class="text-2xl font-bold text-[#002f60]">' + total + '</div>'
+                    + '<div class="text-xs text-slate-500">' + (c.confirmed || 0) + ' confirmed · ' + (c.possible || 0) + ' possible · ' + (c.filled || 0) + ' filled</div>'
+                    + '</div>';
+            });
+            html += '</div>';
+
+            // JazzHR stage distribution
+            html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">';
+            html += '<div><h3 class="text-sm font-bold text-slate-700 mb-3">JazzHR Candidate Stage Distribution</h3>';
+            html += '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"><table class="w-full text-sm">';
+            html += '<thead><tr class="bg-slate-50"><th class="px-4 py-2 text-left text-xs font-bold text-slate-500 uppercase">Stage</th><th class="px-4 py-2 text-right text-xs font-bold text-slate-500 uppercase">Count</th></tr></thead><tbody>';
+            activeStages.forEach(s => {
+                html += '<tr class="border-t border-slate-100"><td class="px-4 py-2">' + (s.raw_stage || 'Unknown') + '</td><td class="px-4 py-2 text-right font-semibold">' + s.cnt + '</td></tr>';
+            });
+            if (rejectedStages.length > 0) {
+                const rejTotal = rejectedStages.reduce((sum, s) => sum + s.cnt, 0);
+                html += '<tr class="border-t-2 border-slate-200 bg-red-50/50"><td class="px-4 py-2 text-red-600 font-medium">Rejected / Withdrawn</td><td class="px-4 py-2 text-right font-semibold text-red-600">' + rejTotal + '</td></tr>';
+            }
+            html += '</tbody></table></div></div>';
+
+            // Recent activity
+            html += '<div><h3 class="text-sm font-bold text-slate-700 mb-3">Recent JazzHR Activity</h3>';
+            html += '<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 max-h-[400px] overflow-y-auto">';
+            if (activity.length === 0) {
+                html += '<p class="text-sm text-slate-400 italic">No recent activity.</p>';
+            } else {
+                activity.forEach(a => {
+                    html += '<div class="flex items-start gap-3 py-2 border-b border-slate-100 last:border-0">'
+                        + '<div class="text-[10px] text-slate-400 whitespace-nowrap pt-0.5">' + (a.date || '') + '</div>'
+                        + '<div class="text-xs text-slate-600">' + (a.action || '') + '</div>'
+                        + '</div>';
+                });
+            }
+            html += '</div></div>';
+            html += '</div>';
+
+            document.getElementById('pipeInsightsContent').innerHTML = html;
+        }
+
+        // ── Toast helper ──
+        function pipeShowToast(msg) {
+            const t = document.createElement('div');
+            t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#002f60;color:#fff;font-size:13px;font-weight:600;padding:11px 24px;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.25);z-index:9999;';
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+
         // Modal functions
         function showAddModal() {
             document.getElementById('modalTitle').textContent = 'Add New Position';
@@ -1199,11 +2774,16 @@
         function renderUnassignedBadge() {
             const badge = document.getElementById('unassignedBadge');
             const count = document.getElementById('unassignedCount');
+            const countBadge = document.getElementById('unassignedCountBadge');
+            const action = document.getElementById('unassignedAction');
             if (unassignedStaff.length > 0) {
                 count.textContent = unassignedStaff.length;
+                if (countBadge) countBadge.textContent = unassignedStaff.length;
                 badge.classList.remove('hidden');
+                if (action) action.classList.remove('hidden');
             } else {
                 badge.classList.add('hidden');
+                if (action) action.classList.add('hidden');
             }
         }
 

@@ -227,7 +227,10 @@ def auth_status():
                 logger.error(f"Error looking up job title: {e}")
 
         if job_title:
-            is_talent = job_title in TALENT_TITLES
+            # C-Team members (Chief, ExDir) always get talent access
+            title_lower = job_title.lower()
+            is_cteam = any(kw.lower() in title_lower for kw in STAFFING_BOARD_C_TEAM_KEYWORDS)
+            is_talent = is_cteam or job_title in TALENT_TITLES
             has_access = has_staffing_board_access(job_title)
 
         return jsonify({
@@ -1178,8 +1181,8 @@ def get_hiring_summary():
         return jsonify({'error': 'BigQuery client not initialized'}), 500
 
     try:
-        # Define site schools
-        site_schools = ['Arthur Ashe', 'Samuel J Green', 'Langston Hughes', 'Phillis Wheatley']
+        # Define schools (site schools + Network + Unassigned)
+        site_schools = ['Arthur Ashe', 'Samuel J Green', 'Langston Hughes', 'Phillis Wheatley', 'Network', 'Unassigned']
 
         query = f"""
             SELECT
@@ -1200,7 +1203,9 @@ def get_hiring_summary():
         results = bq_client.query(query, job_config=job_config).result()
 
         # Build summary structure
-        categories = ['Leadership', 'Teacher', 'Support', 'Operations']
+        # Network is tracked separately and excluded from 'All' totals (school-based only)
+        categories = ['Leadership', 'Teacher', 'Support', 'Operations', 'Network']
+        school_categories = ['Leadership', 'Teacher', 'Support', 'Operations']
         summary = {}
 
         for school in site_schools:
@@ -1220,20 +1225,23 @@ def get_hiring_summary():
                 summary[school][cat]['to_hire'] += row.positions_to_hire
                 summary[school][cat]['hired'] += row.hired_to_date
 
-                summary[school]['All']['total'] += row.total_positions
-                summary[school]['All']['filled'] += row.filled_positions
-                summary[school]['All']['to_hire'] += row.positions_to_hire
-                summary[school]['All']['hired'] += row.hired_to_date
+                # Only include school-based categories in 'All' totals
+                if cat in school_categories:
+                    summary[school]['All']['total'] += row.total_positions
+                    summary[school]['All']['filled'] += row.filled_positions
+                    summary[school]['All']['to_hire'] += row.positions_to_hire
+                    summary[school]['All']['hired'] += row.hired_to_date
 
                 summary['ALL SCHOOLS'][cat]['total'] += row.total_positions
                 summary['ALL SCHOOLS'][cat]['filled'] += row.filled_positions
                 summary['ALL SCHOOLS'][cat]['to_hire'] += row.positions_to_hire
                 summary['ALL SCHOOLS'][cat]['hired'] += row.hired_to_date
 
-                summary['ALL SCHOOLS']['All']['total'] += row.total_positions
-                summary['ALL SCHOOLS']['All']['filled'] += row.filled_positions
-                summary['ALL SCHOOLS']['All']['to_hire'] += row.positions_to_hire
-                summary['ALL SCHOOLS']['All']['hired'] += row.hired_to_date
+                if cat in school_categories:
+                    summary['ALL SCHOOLS']['All']['total'] += row.total_positions
+                    summary['ALL SCHOOLS']['All']['filled'] += row.filled_positions
+                    summary['ALL SCHOOLS']['All']['to_hire'] += row.positions_to_hire
+                    summary['ALL SCHOOLS']['All']['hired'] += row.hired_to_date
 
         # Calculate percentages
         result = []
@@ -1260,6 +1268,508 @@ def get_hiring_summary():
 
     except Exception as e:
         logger.error(f"Error fetching hiring summary: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Pipeline API (Talent Team only — pulls from jazzhr dataset)
+# ─────────────────────────────────────────────────────────────────────────────
+
+JAZZHR_DATASET = 'jazzhr'
+PIPELINE_CAND_TABLE = 'pipeline_candidates'
+
+
+def ensure_pipeline_table():
+    """Create pipeline_candidates table if it doesn't exist."""
+    if not bq_client:
+        return
+    table_id = f"{PROJECT_ID}.{DATASET_ID}.{PIPELINE_CAND_TABLE}"
+    try:
+        bq_client.get_table(table_id)
+        logger.info(f"Pipeline candidates table exists: {table_id}")
+    except Exception:
+        from google.cloud.bigquery import SchemaField
+        schema = [
+            SchemaField("id", "STRING", mode="REQUIRED"),
+            SchemaField("position_id", "STRING", mode="REQUIRED"),
+            SchemaField("name", "STRING", mode="REQUIRED"),
+            SchemaField("stage", "STRING", mode="REQUIRED"),
+            SchemaField("notes", "STRING"),
+            SchemaField("interview_date", "STRING"),
+            SchemaField("interview_time", "STRING"),
+            SchemaField("source", "STRING"),
+            SchemaField("created_by", "STRING"),
+            SchemaField("created_at", "TIMESTAMP"),
+            SchemaField("updated_at", "TIMESTAMP"),
+        ]
+        table = bigquery.Table(table_id, schema=schema)
+        bq_client.create_table(table)
+        logger.info(f"Created {PIPELINE_CAND_TABLE} table")
+
+
+try:
+    ensure_pipeline_table()
+except Exception as e:
+    logger.warning(f"Could not ensure pipeline table: {e}")
+
+
+def talent_required(f):
+    """Decorator to require authentication AND talent team membership."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if DEV_MODE:
+            if 'user' not in session:
+                session['user'] = {
+                    'email': DEV_USER_EMAIL,
+                    'name': 'Dev User',
+                    'picture': ''
+                }
+            return f(*args, **kwargs)
+
+        if 'user' not in session:
+            return jsonify({'error': 'Authentication required'}), 401
+
+        job_title = session.get('job_title', '')
+        title_lower = job_title.lower() if job_title else ''
+        is_cteam = any(kw.lower() in title_lower for kw in STAFFING_BOARD_C_TEAM_KEYWORDS)
+        if not is_cteam and job_title not in TALENT_TITLES:
+            return jsonify({'error': 'Talent team access required'}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+@app.route('/api/pipeline/data')
+@talent_required
+def pipeline_data():
+    """Get all pipeline data: positions from staffing board + candidates from JazzHR."""
+    if not bq_client:
+        return jsonify({'error': 'BigQuery client not initialized'}), 500
+
+    try:
+        # 1. Positions from staffing board
+        pos_query = f"""
+            SELECT
+                position_id, school, job_category, job_title, subject,
+                grade_level, status_26_27, current_status,
+                first_name, last_name, itr_response, candidate_name
+            FROM `{PROJECT_ID}.{DATASET_ID}.{POSITION_TABLE}`
+            WHERE status_26_27 IN ('Open', 'Possible Open')
+            ORDER BY school, job_category, job_title
+        """
+        positions = [dict(row.items()) for row in bq_client.query(pos_query).result()]
+
+        # 2. Candidates from JazzHR — use activities table for accurate stage names
+        cand_query = f"""
+            WITH latest_stage AS (
+                SELECT
+                    object_id as applicant_id,
+                    REGEXP_EXTRACT(action, r'to "([^"]+)"') as raw_stage,
+                    ROW_NUMBER() OVER (PARTITION BY object_id ORDER BY date DESC, time DESC) as rn
+                FROM `{PROJECT_ID}.{JAZZHR_DATASET}.activities`
+                WHERE category = 'resume_status'
+            )
+            SELECT
+                a.id as applicant_id,
+                a.first_name, a.last_name,
+                a.job_id, a.job_title as applied_job_title,
+                a.apply_date,
+                j.title as jazzhr_job_title,
+                j.status as job_status,
+                COALESCE(ls.raw_stage, '') as raw_stage,
+                CASE
+                    WHEN h.applicant_id IS NOT NULL THEN 'hired'
+                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%not hired%' THEN 'rejected'
+                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%not a good fit%' THEN 'rejected'
+                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%does not meet%' THEN 'rejected'
+                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%withdrew%' THEN 'rejected'
+                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%international%' THEN 'rejected'
+                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%another%role%' THEN 'rejected'
+                    WHEN LOWER(COALESCE(ls.raw_stage, '')) IN ('phone screen', 'screen') THEN 'screen'
+                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%interview%' THEN 'interview'
+                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%sample teach%' THEN 'interview'
+                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%performance task%' THEN 'interview'
+                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%offer%' THEN 'hired'
+                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%hire%' THEN 'hired'
+                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%full time%' THEN 'hired'
+                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%pool%' THEN 'pool'
+                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%future%' THEN 'pool'
+                    WHEN ls.raw_stage IS NOT NULL AND ls.raw_stage != '' THEN 'screen'
+                    ELSE 'new'
+                END as stage,
+                h.hired_date
+            FROM `{PROJECT_ID}.{JAZZHR_DATASET}.applicants` a
+            LEFT JOIN `{PROJECT_ID}.{JAZZHR_DATASET}.jobs` j ON a.job_id = j.id
+            LEFT JOIN latest_stage ls ON a.id = ls.applicant_id AND ls.rn = 1
+            LEFT JOIN `{PROJECT_ID}.{JAZZHR_DATASET}.hires` h ON a.id = h.applicant_id
+            WHERE LOWER(j.status) = 'open'
+            ORDER BY a.apply_date DESC
+        """
+        all_candidates = [dict(row.items()) for row in bq_client.query(cand_query).result()]
+
+        # Filter out rejected/withdrawn candidates from active pipeline
+        candidates = [c for c in all_candidates if c['stage'] != 'rejected']
+        rejected_count = len(all_candidates) - len(candidates)
+
+        # 3. Build stats — JazzHR totals (for incoming section info)
+        total_openings = len(positions)
+        confirmed_open = sum(1 for p in positions if p['status_26_27'] == 'Open')
+        possible_open = sum(1 for p in positions if p['status_26_27'] == 'Possible Open')
+
+        # JazzHR-wide counts (informational, shown in incoming section)
+        jazzhr_total = len(candidates)
+        jazzhr_new = sum(1 for c in candidates if c['stage'] == 'new')
+        jazzhr_screen = sum(1 for c in candidates if c['stage'] == 'screen')
+        jazzhr_interview = sum(1 for c in candidates if c['stage'] == 'interview')
+        jazzhr_pool = sum(1 for c in candidates if c['stage'] == 'pool')
+        jazzhr_hired = sum(1 for c in candidates if c['stage'] == 'hired')
+
+        # Group candidates by JazzHR job
+        by_job = {}
+        incoming_candidates = []
+        for c in candidates:
+            jid = c['job_id']
+            if jid not in by_job:
+                by_job[jid] = {
+                    'title': c['jazzhr_job_title'] or c['applied_job_title'] or 'Unknown',
+                    'candidates': []
+                }
+            cand_data = {
+                'id': c['applicant_id'],
+                'name': f"{c['first_name'] or ''} {c['last_name'] or ''}".strip(),
+                'stage': c['stage'],
+                'raw_stage': c.get('raw_stage', ''),
+                'apply_date': str(c['apply_date']) if c['apply_date'] else None,
+                'hired_date': str(c['hired_date']) if c['hired_date'] else None,
+                'job_title': c['jazzhr_job_title'] or c['applied_job_title'] or '',
+            }
+            by_job[jid]['candidates'].append(cand_data)
+            incoming_candidates.append(cand_data)
+
+        # 4. Manual candidates from pipeline_candidates table
+        manual_query = f"""
+            SELECT id, position_id, name, stage, notes,
+                   interview_date, interview_time, source
+            FROM `{PROJECT_ID}.{DATASET_ID}.{PIPELINE_CAND_TABLE}`
+            ORDER BY created_at DESC
+        """
+        manual_candidates = [dict(row.items()) for row in bq_client.query(manual_query).result()]
+
+        # Group manual candidates by position_id
+        manual_by_position = {}
+        for mc in manual_candidates:
+            pid = mc['position_id']
+            if pid not in manual_by_position:
+                manual_by_position[pid] = []
+            manual_by_position[pid].append({
+                'id': mc['id'],
+                'name': mc['name'],
+                'stage': mc['stage'],
+                'notes': mc.get('notes', ''),
+                'date': mc.get('interview_date'),
+                'time': mc.get('interview_time'),
+                'source': mc.get('source', 'manual'),
+            })
+
+        # Active = candidates being actively worked (screen + interview + pool from JazzHR)
+        # Excludes "new" (just applied, not yet touched) and "hired" (done)
+        active_candidates = jazzhr_screen + jazzhr_interview + jazzhr_pool
+
+        return jsonify({
+            'positions': positions,
+            'candidates_by_job': by_job,
+            'candidates_by_position': manual_by_position,
+            'incoming_candidates': incoming_candidates,
+            'stats': {
+                'total_openings': total_openings,
+                'confirmed_open': confirmed_open,
+                'possible_open': possible_open,
+                'active_candidates': active_candidates,
+                'at_new': jazzhr_new,
+                'at_screen': jazzhr_screen,
+                'at_interview': jazzhr_interview,
+                'at_pool': jazzhr_pool,
+                'hired': jazzhr_hired,
+                'rejected': rejected_count,
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Error fetching pipeline data: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Pipeline Candidate CRUD
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.route('/api/pipeline/candidates', methods=['POST'])
+@talent_required
+def add_pipeline_candidate():
+    """Add a candidate to a position's pipeline."""
+    if not bq_client:
+        return jsonify({'error': 'BigQuery client not initialized'}), 500
+
+    data = request.get_json()
+    if not data or not data.get('position_id') or not data.get('name'):
+        return jsonify({'error': 'position_id and name required'}), 400
+
+    import uuid
+    from datetime import datetime
+
+    cand_id = 'c_' + str(uuid.uuid4())[:8]
+    user_email = session.get('user', {}).get('email', 'unknown')
+    now = datetime.utcnow().isoformat()
+
+    row = {
+        'id': cand_id,
+        'position_id': data['position_id'],
+        'name': data['name'].strip(),
+        'stage': data.get('stage', 'new'),
+        'notes': data.get('notes', ''),
+        'interview_date': data.get('date') or None,
+        'interview_time': data.get('time') or None,
+        'source': 'manual',
+        'created_by': user_email,
+        'created_at': now,
+        'updated_at': now,
+    }
+
+    table_id = f"{PROJECT_ID}.{DATASET_ID}.{PIPELINE_CAND_TABLE}"
+    errors = bq_client.insert_rows_json(table_id, [row])
+    if errors:
+        logger.error(f"Error adding pipeline candidate: {errors}")
+        return jsonify({'error': str(errors)}), 500
+
+    logger.info(f"Added pipeline candidate {cand_id} to position {data['position_id']}")
+    return jsonify({'id': cand_id, 'message': 'Candidate added'}), 201
+
+
+@app.route('/api/pipeline/candidates/<cand_id>', methods=['PUT'])
+@talent_required
+def update_pipeline_candidate(cand_id):
+    """Update a pipeline candidate's stage, notes, date, or time."""
+    if not bq_client:
+        return jsonify({'error': 'BigQuery client not initialized'}), 500
+
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    from datetime import datetime
+    now = datetime.utcnow().isoformat()
+
+    updates = []
+    params = [bigquery.ScalarQueryParameter("id", "STRING", cand_id)]
+
+    field_map = {
+        'stage': 'stage',
+        'notes': 'notes',
+        'date': 'interview_date',
+        'time': 'interview_time',
+        'name': 'name',
+        'position_id': 'position_id',
+    }
+
+    for json_field, db_field in field_map.items():
+        if json_field in data:
+            updates.append(f"{db_field} = @{db_field}")
+            val = str(data[json_field]) if data[json_field] else ""
+            params.append(bigquery.ScalarQueryParameter(db_field, "STRING", val))
+
+    if not updates:
+        return jsonify({'message': 'No changes'}), 200
+
+    updates.append("updated_at = @updated_at")
+    params.append(bigquery.ScalarQueryParameter("updated_at", "TIMESTAMP", now))
+
+    query = f"""
+        UPDATE `{PROJECT_ID}.{DATASET_ID}.{PIPELINE_CAND_TABLE}`
+        SET {', '.join(updates)}
+        WHERE id = @id
+    """
+    job_config = bigquery.QueryJobConfig(query_parameters=params)
+    bq_client.query(query, job_config=job_config).result()
+
+    logger.info(f"Updated pipeline candidate {cand_id}")
+    return jsonify({'message': 'Updated'})
+
+
+@app.route('/api/pipeline/candidates/<cand_id>', methods=['DELETE'])
+@talent_required
+def delete_pipeline_candidate(cand_id):
+    """Remove a candidate from the pipeline."""
+    if not bq_client:
+        return jsonify({'error': 'BigQuery client not initialized'}), 500
+
+    query = f"""
+        DELETE FROM `{PROJECT_ID}.{DATASET_ID}.{PIPELINE_CAND_TABLE}`
+        WHERE id = @id
+    """
+    params = [bigquery.ScalarQueryParameter("id", "STRING", cand_id)]
+    job_config = bigquery.QueryJobConfig(query_parameters=params)
+    bq_client.query(query, job_config=job_config).result()
+
+    logger.info(f"Deleted pipeline candidate {cand_id}")
+    return jsonify({'message': 'Deleted'})
+
+
+@app.route('/api/pipeline/candidates/move', methods=['POST'])
+@talent_required
+def move_pipeline_candidate():
+    """Move a candidate from one position to another."""
+    if not bq_client:
+        return jsonify({'error': 'BigQuery client not initialized'}), 500
+
+    data = request.get_json()
+    cand_id = data.get('candidate_id')
+    new_position_id = data.get('new_position_id')
+    new_stage = data.get('stage')
+    remove_from_current = data.get('remove_from_current', True)
+
+    if not cand_id or not new_position_id:
+        return jsonify({'error': 'candidate_id and new_position_id required'}), 400
+
+    from datetime import datetime
+    import uuid
+    now = datetime.utcnow().isoformat()
+
+    if remove_from_current:
+        # Move: update position_id and optionally stage
+        updates = ["position_id = @new_position_id", "updated_at = @updated_at"]
+        params = [
+            bigquery.ScalarQueryParameter("id", "STRING", cand_id),
+            bigquery.ScalarQueryParameter("new_position_id", "STRING", new_position_id),
+            bigquery.ScalarQueryParameter("updated_at", "TIMESTAMP", now),
+        ]
+        if new_stage:
+            updates.append("stage = @stage")
+            params.append(bigquery.ScalarQueryParameter("stage", "STRING", new_stage))
+
+        query = f"""
+            UPDATE `{PROJECT_ID}.{DATASET_ID}.{PIPELINE_CAND_TABLE}`
+            SET {', '.join(updates)}
+            WHERE id = @id
+        """
+        job_config = bigquery.QueryJobConfig(query_parameters=params)
+        bq_client.query(query, job_config=job_config).result()
+    else:
+        # Copy: get current candidate data, insert a new row at the new position
+        get_query = f"""
+            SELECT name, stage, notes, interview_date, interview_time, source, created_by
+            FROM `{PROJECT_ID}.{DATASET_ID}.{PIPELINE_CAND_TABLE}`
+            WHERE id = @id
+        """
+        params = [bigquery.ScalarQueryParameter("id", "STRING", cand_id)]
+        job_config = bigquery.QueryJobConfig(query_parameters=params)
+        rows = list(bq_client.query(get_query, job_config=job_config).result())
+
+        if rows:
+            old = dict(rows[0].items())
+            new_id = 'c_' + str(uuid.uuid4())[:8]
+            row = {
+                'id': new_id,
+                'position_id': new_position_id,
+                'name': old['name'],
+                'stage': new_stage or old['stage'],
+                'notes': old.get('notes', ''),
+                'interview_date': old.get('interview_date'),
+                'interview_time': old.get('interview_time'),
+                'source': old.get('source', 'manual'),
+                'created_by': old.get('created_by', ''),
+                'created_at': now,
+                'updated_at': now,
+            }
+            table_id = f"{PROJECT_ID}.{DATASET_ID}.{PIPELINE_CAND_TABLE}"
+            bq_client.insert_rows_json(table_id, [row])
+
+    logger.info(f"Moved pipeline candidate {cand_id} to position {new_position_id}")
+    return jsonify({'message': 'Moved'})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Pipeline Insights
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.route('/api/pipeline/insights')
+@talent_required
+def pipeline_insights():
+    """Get pipeline analytics: stage distribution by school, unfilled positions, recent activity."""
+    if not bq_client:
+        return jsonify({'error': 'BigQuery client not initialized'}), 500
+
+    try:
+        # 1. Openings by school with fill rate
+        school_query = f"""
+            SELECT
+                school,
+                COUNTIF(status_26_27 IN ('Open', 'Possible Open')) as open_positions,
+                COUNTIF(status_26_27 = 'Open') as confirmed_open,
+                COUNTIF(status_26_27 = 'Possible Open') as possible_open,
+                COUNTIF(status_26_27 IN ('Filled', 'Offer Out')) as filled_or_offer,
+                COUNTIF(status_26_27 = 'Return') as returning
+            FROM `{PROJECT_ID}.{DATASET_ID}.{POSITION_TABLE}`
+            GROUP BY school
+            ORDER BY school
+        """
+        school_data = [dict(row.items()) for row in bq_client.query(school_query).result()]
+
+        # 2. Recent JazzHR activity (last 14 days)
+        activity_query = f"""
+            SELECT
+                action, date, time
+            FROM `{PROJECT_ID}.{JAZZHR_DATASET}.activities`
+            WHERE category = 'resume_status'
+            ORDER BY date DESC, time DESC
+            LIMIT 25
+        """
+        recent_activity = [dict(row.items()) for row in bq_client.query(activity_query).result()]
+
+        # 3. Category breakdown of open positions
+        cat_query = f"""
+            SELECT
+                job_category,
+                COUNTIF(status_26_27 = 'Open') as confirmed,
+                COUNTIF(status_26_27 = 'Possible Open') as possible,
+                COUNTIF(status_26_27 IN ('Filled', 'Offer Out')) as filled
+            FROM `{PROJECT_ID}.{DATASET_ID}.{POSITION_TABLE}`
+            GROUP BY job_category
+            ORDER BY job_category
+        """
+        category_data = [dict(row.items()) for row in bq_client.query(cat_query).result()]
+
+        # 4. Stage distribution from JazzHR activities
+        stage_dist_query = f"""
+            WITH latest AS (
+                SELECT
+                    object_id,
+                    REGEXP_EXTRACT(action, r'to "([^"]+)"') as raw_stage,
+                    ROW_NUMBER() OVER (PARTITION BY object_id ORDER BY date DESC, time DESC) as rn
+                FROM `{PROJECT_ID}.{JAZZHR_DATASET}.activities`
+                WHERE category = 'resume_status'
+            )
+            SELECT
+                raw_stage,
+                COUNT(*) as cnt
+            FROM latest
+            WHERE rn = 1 AND raw_stage IS NOT NULL
+            GROUP BY raw_stage
+            ORDER BY cnt DESC
+        """
+        stage_dist = [dict(row.items()) for row in bq_client.query(stage_dist_query).result()]
+
+        return jsonify({
+            'schools': school_data,
+            'recent_activity': [{
+                'action': a['action'],
+                'date': str(a['date']) if a['date'] else None,
+                'time': str(a['time']) if a['time'] else None,
+            } for a in recent_activity],
+            'categories': category_data,
+            'stage_distribution': stage_dist,
+        })
+
+    except Exception as e:
+        logger.error(f"Error fetching pipeline insights: {e}")
         return jsonify({'error': str(e)}), 500
 
 
