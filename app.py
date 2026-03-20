@@ -13,7 +13,7 @@ from google.cloud import bigquery
 from authlib.integrations.flask_client import OAuth
 
 from config import (
-    SECRET_KEY, ALLOWED_ORIGINS, ALLOWED_DOMAIN,
+    SECRET_KEY, ALLOWED_ORIGINS, ALLOWED_DOMAIN, ALLOWED_EXTERNAL_EMAILS,
     GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, DEV_MODE, DEV_USER_EMAIL,
     PROJECT_ID, DATASET_ID, STAFF_TABLE, POSITION_TABLE, SITE_SCHOOLS,
     TALENT_TITLES, STAFFING_BOARD_C_TEAM_KEYWORDS, STAFFING_BOARD_TITLES
@@ -61,7 +61,7 @@ def refresh_job_title():
     if 'user' not in session or not bq_client:
         return
     email = session['user'].get('email', '')
-    if not email:
+    if not email or email in ALLOWED_EXTERNAL_EMAILS:
         return
     try:
         query = f"""
@@ -110,6 +110,10 @@ def login_required(f):
 
         if 'user' not in session:
             return jsonify({'error': 'Authentication required'}), 401
+
+        email = session['user'].get('email', '')
+        if email in ALLOWED_EXTERNAL_EMAILS:
+            return f(*args, **kwargs)
 
         job_title = session.get('job_title', '')
         if not has_staffing_board_access(job_title):
@@ -161,7 +165,7 @@ def auth_callback():
             return redirect('/?error=no_user_info')
 
         email = user_info.get('email', '').lower()
-        if not email.endswith(f'@{ALLOWED_DOMAIN}'):
+        if not email.endswith(f'@{ALLOWED_DOMAIN}') and email not in ALLOWED_EXTERNAL_EMAILS:
             return redirect('/?error=invalid_domain')
 
         session['user'] = {
@@ -196,7 +200,8 @@ def auth_status():
                 'picture': ''
             },
             'isAdmin': True,
-            'isTalent': True
+            'isTalent': True,
+            'canViewRetention': True
         })
 
     user = session.get('user')
@@ -206,6 +211,7 @@ def auth_status():
         # Look up job title to determine role-based access
         is_talent = False
         has_access = False
+        can_view_retention = False
         job_title = session.get('job_title', '')
 
         # Cache job title in session to avoid repeated BigQuery lookups
@@ -232,12 +238,14 @@ def auth_status():
             is_cteam = any(kw.lower() in title_lower for kw in STAFFING_BOARD_C_TEAM_KEYWORDS)
             is_talent = is_cteam or job_title in TALENT_TITLES
             has_access = has_staffing_board_access(job_title)
+            can_view_retention = is_cteam or job_title == 'School Director'
 
         return jsonify({
             'authenticated': True,
             'user': user,
             'hasAccess': has_access,
-            'isTalent': is_talent
+            'isTalent': is_talent,
+            'canViewRetention': can_view_retention
         })
 
     return jsonify({'authenticated': False})
@@ -750,6 +758,7 @@ def get_reconciliation():
 # ─────────────────────────────────────────────────────────────────────────────
 
 HISTORY_TABLE = "position_history"
+OCCUPANCY_TABLE = "position_occupancy"
 
 
 @app.route('/api/positions/<position_id>', methods=['GET'])
@@ -871,6 +880,51 @@ def update_position(position_id):
             history_table_id = f"{PROJECT_ID}.{DATASET_ID}.{HISTORY_TABLE}"
             bq_client.insert_rows_json(history_table_id, history_records)
 
+        # Track occupancy changes — if employee_25_26 changed, close old and open new
+        old_emp = old_position.get('employee_25_26', '')
+        new_emp = data.get('employee_25_26', old_emp)
+        if 'employee_25_26' in data and new_emp != old_emp:
+            occupancy_table = f"{PROJECT_ID}.{DATASET_ID}.{OCCUPANCY_TABLE}"
+            today = datetime.utcnow().strftime('%Y-%m-%d')
+
+            # Close old occupancy record (set end_date)
+            if old_emp and old_emp.strip():
+                try:
+                    close_query = f"""
+                        UPDATE `{occupancy_table}`
+                        SET end_date = @end_date, is_current = FALSE
+                        WHERE position_id = @position_id AND is_current = TRUE
+                    """
+                    close_params = [
+                        bigquery.ScalarQueryParameter("position_id", "STRING", position_id),
+                        bigquery.ScalarQueryParameter("end_date", "DATE", today),
+                    ]
+                    close_config = bigquery.QueryJobConfig(query_parameters=close_params)
+                    bq_client.query(close_query, job_config=close_config).result()
+                except Exception as occ_err:
+                    logger.warning(f"Failed to close old occupancy: {occ_err}")
+
+            # Open new occupancy record
+            if new_emp and new_emp.strip():
+                new_emp_num = data.get('employee_number', old_position.get('employee_number', ''))
+                bq_client.insert_rows_json(occupancy_table, [{
+                    "occupancy_id": str(uuid.uuid4()),
+                    "position_id": position_id,
+                    "employee_name": new_emp,
+                    "employee_number": str(new_emp_num),
+                    "school": old_position.get('school', ''),
+                    "job_title": old_position.get('job_title', ''),
+                    "subject": old_position.get('subject', ''),
+                    "grade_level": old_position.get('grade_level', ''),
+                    "school_year": "25-26",
+                    "start_date": today,
+                    "end_date": None,
+                    "is_current": True,
+                    "source": "staffing_board",
+                    "match_confidence": "high",
+                    "created_at": now,
+                }])
+
         logger.info(f"Updated position {position_id} by {user_email}")
         return jsonify({'message': 'Position updated successfully', 'changes': len(history_records)})
 
@@ -946,6 +1000,28 @@ def create_position():
             "changed_by": user_email,
             "changed_at": now,
         }])
+
+        # Log initial occupancy if position has an employee
+        emp_name = data.get('employee_25_26', '')
+        if emp_name and emp_name.strip():
+            occupancy_table = f"{PROJECT_ID}.{DATASET_ID}.{OCCUPANCY_TABLE}"
+            bq_client.insert_rows_json(occupancy_table, [{
+                "occupancy_id": str(uuid.uuid4()),
+                "position_id": position_id,
+                "employee_name": emp_name,
+                "employee_number": data.get("employee_number", ""),
+                "school": data.get("school", ""),
+                "job_title": data.get("job_title", ""),
+                "subject": data.get("subject", ""),
+                "grade_level": data.get("grade_level", ""),
+                "school_year": "25-26",
+                "start_date": datetime.utcnow().strftime('%Y-%m-%d'),
+                "end_date": None,
+                "is_current": True,
+                "source": "staffing_board",
+                "match_confidence": "high",
+                "created_at": now,
+            }])
 
         logger.info(f"Created position {position_id} by {user_email}")
         return jsonify({'message': 'Position created', 'position_id': position_id}), 201
@@ -1028,6 +1104,53 @@ def get_position_history(position_id):
 
     except Exception as e:
         logger.error(f"Error fetching position history: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Position Occupancy (who has held this position over time)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.route('/api/positions/<position_id>/occupancy')
+@login_required
+def get_position_occupancy(position_id):
+    """Get occupancy history for a position — who held it and when."""
+    if not bq_client:
+        return jsonify({'error': 'BigQuery client not initialized'}), 500
+
+    try:
+        query = f"""
+            SELECT employee_name, employee_number, school_year,
+                   start_date, end_date, is_current, source, match_confidence
+            FROM `{PROJECT_ID}.{DATASET_ID}.{OCCUPANCY_TABLE}`
+            WHERE position_id = @position_id
+            ORDER BY is_current DESC, start_date DESC
+        """
+        params = [bigquery.ScalarQueryParameter("position_id", "STRING", position_id)]
+        job_config = bigquery.QueryJobConfig(query_parameters=params)
+        results = bq_client.query(query, job_config=job_config).result()
+
+        occupants = []
+        for row in results:
+            record = dict(row.items())
+            if record.get('start_date'):
+                record['start_date'] = record['start_date'].isoformat()
+            if record.get('end_date'):
+                record['end_date'] = record['end_date'].isoformat()
+            # Calculate duration
+            from datetime import date as date_type
+            start = row.start_date
+            end = row.end_date or date_type.today()
+            if start:
+                record['duration_days'] = (end - start).days
+            else:
+                record['duration_days'] = None
+            occupants.append(record)
+
+        return jsonify(occupants)
+
+    except Exception as e:
+        logger.error(f"Error fetching position occupancy: {e}")
         return jsonify({'error': str(e)}), 500
 
 
@@ -1225,8 +1348,9 @@ def get_hiring_summary():
                 summary[school][cat]['to_hire'] += row.positions_to_hire
                 summary[school][cat]['hired'] += row.hired_to_date
 
-                # Only include school-based categories in 'All' totals
-                if cat in school_categories:
+                # Include school-based categories in 'All' totals,
+                # plus Network category for the Network school
+                if cat in school_categories or (school == 'Network' and cat == 'Network'):
                     summary[school]['All']['total'] += row.total_positions
                     summary[school]['All']['filled'] += row.filled_positions
                     summary[school]['All']['to_hire'] += row.positions_to_hire
@@ -1252,8 +1376,8 @@ def get_hiring_summary():
                 total_to_hire = data['to_hire'] + data['hired']
                 remaining = data['to_hire']
                 hired = data['hired']
-                pct_goal = round((hired / total_to_hire * 100), 0) if total_to_hire > 0 else None
-                pct_staffed = round((data['filled'] / data['total'] * 100), 0) if data['total'] > 0 else None
+                pct_goal = int(hired / total_to_hire * 100 + 0.5) if total_to_hire > 0 else None
+                pct_staffed = int(data['filled'] / data['total'] * 100 + 0.5) if data['total'] > 0 else None
 
                 row_data[cat] = {
                     'remaining': remaining,
@@ -1346,7 +1470,7 @@ def pipeline_data():
         return jsonify({'error': 'BigQuery client not initialized'}), 500
 
     try:
-        # 1. Positions from staffing board
+        # 1. Positions from staffing board (all Open/Possible Open, including Network)
         pos_query = f"""
             SELECT
                 position_id, school, job_category, job_title, subject,
@@ -1357,17 +1481,11 @@ def pipeline_data():
             ORDER BY school, job_category, job_title
         """
         positions = [dict(row.items()) for row in bq_client.query(pos_query).result()]
+        # School-based positions exclude Network (Network has its own section)
+        school_positions = [p for p in positions if p['school'] != 'Network']
 
-        # 2. Candidates from JazzHR — use activities table for accurate stage names
+        # 2. Candidates from JazzHR — use applicants2jobs + workflow_steps for stage
         cand_query = f"""
-            WITH latest_stage AS (
-                SELECT
-                    object_id as applicant_id,
-                    REGEXP_EXTRACT(action, r'to "([^"]+)"') as raw_stage,
-                    ROW_NUMBER() OVER (PARTITION BY object_id ORDER BY date DESC, time DESC) as rn
-                FROM `{PROJECT_ID}.{JAZZHR_DATASET}.activities`
-                WHERE category = 'resume_status'
-            )
             SELECT
                 a.id as applicant_id,
                 a.first_name, a.last_name,
@@ -1375,52 +1493,56 @@ def pipeline_data():
                 a.apply_date,
                 j.title as jazzhr_job_title,
                 j.status as job_status,
-                COALESCE(ls.raw_stage, '') as raw_stage,
+                COALESCE(ws.step_name, '') as raw_stage,
                 CASE
                     WHEN h.applicant_id IS NOT NULL THEN 'hired'
-                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%not hired%' THEN 'rejected'
-                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%not a good fit%' THEN 'rejected'
-                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%does not meet%' THEN 'rejected'
-                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%withdrew%' THEN 'rejected'
-                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%international%' THEN 'rejected'
-                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%another%role%' THEN 'rejected'
-                    WHEN LOWER(COALESCE(ls.raw_stage, '')) IN ('phone screen', 'screen') THEN 'screen'
-                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%interview%' THEN 'interview'
-                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%sample teach%' THEN 'interview'
-                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%performance task%' THEN 'interview'
-                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%offer%' THEN 'hired'
-                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%hire%' THEN 'hired'
-                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%full time%' THEN 'hired'
-                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%pool%' THEN 'pool'
-                    WHEN LOWER(COALESCE(ls.raw_stage, '')) LIKE '%future%' THEN 'pool'
-                    WHEN ls.raw_stage IS NOT NULL AND ls.raw_stage != '' THEN 'screen'
+                    WHEN LOWER(COALESCE(ws.step_name, '')) LIKE '%not hired%' THEN 'rejected'
+                    WHEN LOWER(COALESCE(ws.step_name, '')) LIKE '%not a good fit%' THEN 'rejected'
+                    WHEN LOWER(COALESCE(ws.step_name, '')) LIKE '%does not meet%' THEN 'rejected'
+                    WHEN LOWER(COALESCE(ws.step_name, '')) LIKE '%withdrew%' THEN 'rejected'
+                    WHEN LOWER(COALESCE(ws.step_name, '')) LIKE '%international%' THEN 'rejected'
+                    WHEN LOWER(COALESCE(ws.step_name, '')) LIKE '%another%role%' THEN 'rejected'
+                    WHEN LOWER(COALESCE(ws.step_name, '')) IN ('phone screen', 'screen') THEN 'screen'
+                    WHEN LOWER(COALESCE(ws.step_name, '')) LIKE '%interview%' THEN 'interview'
+                    WHEN LOWER(COALESCE(ws.step_name, '')) LIKE '%sample teach%' THEN 'interview'
+                    WHEN LOWER(COALESCE(ws.step_name, '')) LIKE '%performance task%' THEN 'interview'
+                    WHEN LOWER(COALESCE(ws.step_name, '')) LIKE '%offer%' THEN 'hired'
+                    WHEN LOWER(COALESCE(ws.step_name, '')) LIKE '%hire in progress%' THEN 'hired'
+                    WHEN LOWER(COALESCE(ws.step_name, '')) LIKE '%full time%' THEN 'hired'
+                    WHEN LOWER(COALESCE(ws.step_name, '')) LIKE '%pool%' THEN 'pool'
+                    WHEN LOWER(COALESCE(ws.step_name, '')) LIKE '%future%' THEN 'pool'
+                    WHEN LOWER(COALESCE(ws.step_name, '')) LIKE '%reserve%' THEN 'pool'
+                    WHEN ws.step_name IS NOT NULL AND ws.step_name != '' AND LOWER(ws.step_name) != 'new' THEN 'screen'
                     ELSE 'new'
                 END as stage,
                 h.hired_date
             FROM `{PROJECT_ID}.{JAZZHR_DATASET}.applicants` a
             LEFT JOIN `{PROJECT_ID}.{JAZZHR_DATASET}.jobs` j ON a.job_id = j.id
-            LEFT JOIN latest_stage ls ON a.id = ls.applicant_id AND ls.rn = 1
+            LEFT JOIN `{PROJECT_ID}.{JAZZHR_DATASET}.applicants2jobs` a2j
+                ON a.id = a2j.applicant_id AND a.job_id = a2j.job_id
+            LEFT JOIN `{PROJECT_ID}.{JAZZHR_DATASET}.workflow_steps` ws
+                ON a2j.workflow_step_id = ws.id
             LEFT JOIN `{PROJECT_ID}.{JAZZHR_DATASET}.hires` h ON a.id = h.applicant_id
             WHERE LOWER(j.status) = 'open'
             ORDER BY a.apply_date DESC
         """
         all_candidates = [dict(row.items()) for row in bq_client.query(cand_query).result()]
 
-        # Filter out rejected/withdrawn candidates from active pipeline
-        candidates = [c for c in all_candidates if c['stage'] != 'rejected']
+        # Filter out rejected/withdrawn and talent pool candidates from active pipeline
+        candidates = [c for c in all_candidates if c['stage'] not in ('rejected', 'pool')]
         rejected_count = len(all_candidates) - len(candidates)
 
-        # 3. Build stats — JazzHR totals (for incoming section info)
-        total_openings = len(positions)
-        confirmed_open = sum(1 for p in positions if p['status_26_27'] == 'Open')
-        possible_open = sum(1 for p in positions if p['status_26_27'] == 'Possible Open')
+        # 3. Build stats — school-based counts (excludes Network)
+        remaining_hires = len(school_positions)
+        confirmed_open = sum(1 for p in school_positions if p['status_26_27'] == 'Open')
+        possible_open = sum(1 for p in school_positions if p['status_26_27'] == 'Possible Open')
+        network_open = sum(1 for p in positions if p['school'] == 'Network')
 
         # JazzHR-wide counts (informational, shown in incoming section)
         jazzhr_total = len(candidates)
         jazzhr_new = sum(1 for c in candidates if c['stage'] == 'new')
         jazzhr_screen = sum(1 for c in candidates if c['stage'] == 'screen')
         jazzhr_interview = sum(1 for c in candidates if c['stage'] == 'interview')
-        jazzhr_pool = sum(1 for c in candidates if c['stage'] == 'pool')
         jazzhr_hired = sum(1 for c in candidates if c['stage'] == 'hired')
 
         # Group candidates by JazzHR job
@@ -1470,9 +1592,9 @@ def pipeline_data():
                 'source': mc.get('source', 'manual'),
             })
 
-        # Active = candidates being actively worked (screen + interview + pool from JazzHR)
-        # Excludes "new" (just applied, not yet touched) and "hired" (done)
-        active_candidates = jazzhr_screen + jazzhr_interview + jazzhr_pool
+        # Active = candidates being actively worked (screen + interview from JazzHR)
+        # Excludes "new" (just applied, not yet touched), "hired" (done), and pool
+        active_candidates = jazzhr_screen + jazzhr_interview
 
         return jsonify({
             'positions': positions,
@@ -1480,14 +1602,14 @@ def pipeline_data():
             'candidates_by_position': manual_by_position,
             'incoming_candidates': incoming_candidates,
             'stats': {
-                'total_openings': total_openings,
+                'remaining_hires': remaining_hires,
                 'confirmed_open': confirmed_open,
                 'possible_open': possible_open,
+                'network_open': network_open,
                 'active_candidates': active_candidates,
                 'at_new': jazzhr_new,
                 'at_screen': jazzhr_screen,
                 'at_interview': jazzhr_interview,
-                'at_pool': jazzhr_pool,
                 'hired': jazzhr_hired,
                 'rejected': rejected_count,
             }
@@ -1770,6 +1892,186 @@ def pipeline_insights():
 
     except Exception as e:
         logger.error(f"Error fetching pipeline insights: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Retention
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.route('/api/retention')
+@login_required
+def get_retention():
+    """Calculate retention rates from staff_daily_roster snapshots.
+    Uses school and job_category stored directly on each snapshot row."""
+    try:
+        SDR = f"`{PROJECT_ID}.{DATASET_ID}.staff_daily_roster`"
+
+        # Get available snapshot dates
+        snapshots = [str(row.snapshot_date) for row in bq_client.query(
+            f"SELECT DISTINCT snapshot_date FROM {SDR} ORDER BY snapshot_date"
+        ).result()]
+
+        if not snapshots:
+            return jsonify({'snapshots': [], 'comparisons': []})
+
+        from datetime import date
+        aug_dates = [s for s in snapshots if s[5:7] == '08']
+        oct_dates = [s for s in snapshots if s[5:7] == '10']
+        latest = snapshots[-1]
+
+        # Build comparison pairs
+        comparisons_to_run = []
+
+        for i in range(len(aug_dates) - 1):
+            sy1 = aug_dates[i][:4]
+            sy2 = aug_dates[i+1][:4]
+            comparisons_to_run.append({
+                'label': f'FDOS {sy1[-2:]}-{str(int(sy1)+1)[-2:]} to FDOS {sy2[-2:]}-{str(int(sy2)+1)[-2:]}',
+                'type': 'fdos',
+                'start_date': aug_dates[i],
+                'end_date': aug_dates[i+1],
+            })
+
+        for i in range(len(oct_dates) - 1):
+            comparisons_to_run.append({
+                'label': f'10.1 Retention {oct_dates[i][:4]}-{oct_dates[i+1][:4]}',
+                'type': '10.1',
+                'start_date': oct_dates[i],
+                'end_date': oct_dates[i+1],
+            })
+
+        if oct_dates and latest > oct_dates[-1]:
+            comparisons_to_run.append({
+                'label': '10.1 Retention (Current Year)',
+                'type': '10.1_current',
+                'start_date': oct_dates[-1],
+                'end_date': latest,
+            })
+
+        # Also add current FDOS retention if we have a recent August snapshot
+        if aug_dates and latest > aug_dates[-1]:
+            sy = aug_dates[-1][:4]
+            comparisons_to_run.append({
+                'label': f'FDOS {sy[-2:]}-{str(int(sy)+1)[-2:]} (Current)',
+                'type': 'fdos_current',
+                'start_date': aug_dates[-1],
+                'end_date': latest,
+            })
+
+        results = []
+        for comp in comparisons_to_run:
+            sd, ed = comp['start_date'], comp['end_date']
+
+            # Single query: overall + by school + by category using roster data
+            query = f"""
+                WITH start_staff AS (
+                    SELECT employee_number, school, job_category
+                    FROM {SDR} WHERE snapshot_date = '{sd}'
+                ),
+                end_staff AS (
+                    SELECT DISTINCT employee_number FROM {SDR} WHERE snapshot_date = '{ed}'
+                )
+                SELECT
+                    COUNT(*) AS start_count,
+                    COUNTIF(e.employee_number IS NOT NULL) AS retained,
+                    s.school,
+                    s.job_category
+                FROM start_staff s
+                LEFT JOIN end_staff e ON s.employee_number = e.employee_number
+                GROUP BY s.school, s.job_category
+            """
+            rows = list(bq_client.query(query).result())
+
+            # Aggregate overall
+            total_start = sum(r.start_count for r in rows)
+            total_retained = sum(r.retained for r in rows)
+            overall_pct = round(100.0 * total_retained / total_start, 1) if total_start else 0
+
+            # Aggregate by school
+            school_agg = {}
+            for r in rows:
+                sch = r.school or 'Unknown'
+                if sch not in school_agg:
+                    school_agg[sch] = {'start': 0, 'retained': 0}
+                school_agg[sch]['start'] += r.start_count
+                school_agg[sch]['retained'] += r.retained
+
+            by_school = []
+            for sch in sorted(school_agg.keys()):
+                d = school_agg[sch]
+                by_school.append({
+                    'school': sch,
+                    'start': d['start'],
+                    'retained': d['retained'],
+                    'pct': round(100.0 * d['retained'] / d['start'], 1) if d['start'] else 0,
+                })
+
+            # Aggregate by category
+            cat_agg = {}
+            for r in rows:
+                cat = r.job_category or 'Unknown'
+                if cat not in cat_agg:
+                    cat_agg[cat] = {'start': 0, 'retained': 0}
+                cat_agg[cat]['start'] += r.start_count
+                cat_agg[cat]['retained'] += r.retained
+
+            by_category = []
+            for cat in sorted(cat_agg.keys()):
+                d = cat_agg[cat]
+                by_category.append({
+                    'category': cat,
+                    'start': d['start'],
+                    'retained': d['retained'],
+                    'pct': round(100.0 * d['retained'] / d['start'], 1) if d['start'] else 0,
+                })
+
+            # Cross-tab: school x category matrix
+            matrix = {}
+            for r in rows:
+                sch = r.school or 'Unknown'
+                cat = r.job_category or 'Unknown'
+                if sch not in matrix:
+                    matrix[sch] = {}
+                matrix[sch][cat] = {
+                    'start': r.start_count,
+                    'retained': r.retained,
+                    'pct': round(100.0 * r.retained / r.start_count, 1) if r.start_count else 0,
+                }
+
+            results.append({
+                'label': comp['label'],
+                'type': comp['type'],
+                'start_date': sd,
+                'end_date': ed,
+                'overall': {'start': total_start, 'retained': total_retained, 'pct': overall_pct},
+                'by_school': by_school,
+                'by_category': by_category,
+                'matrix': matrix,
+            })
+
+        # Headcount by snapshot
+        headcount_query = f"""
+            SELECT snapshot_date, COUNT(*) as total,
+                   COUNTIF(school != 'Network') as school_based,
+                   COUNTIF(school = 'Network') as network
+            FROM {SDR}
+            GROUP BY snapshot_date
+            ORDER BY snapshot_date
+        """
+        headcount = []
+        for row in bq_client.query(headcount_query).result():
+            headcount.append({
+                'date': str(row.snapshot_date),
+                'total': row.total,
+                'school_based': row.school_based,
+                'network': row.network,
+            })
+
+        return jsonify({'snapshots': snapshots, 'comparisons': results, 'headcount': headcount})
+
+    except Exception as e:
+        logger.error(f"Error fetching retention data: {e}")
         return jsonify({'error': str(e)}), 500
 
 

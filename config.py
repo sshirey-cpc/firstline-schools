@@ -13,6 +13,10 @@ ALLOWED_ORIGINS = os.environ.get('ALLOWED_ORIGINS', '*').split(',')
 
 # OAuth / domain
 ALLOWED_DOMAIN = 'firstlineschools.org'
+ALLOWED_EXTERNAL_EMAILS = [
+    'jtebeleff@4thsectorsolutions.com',
+    'acarson@4thsectorsolutions.com',
+]
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
 
