@@ -977,12 +977,42 @@
             return today >= twoWeeksBefore && today <= deadline;
         }
 
-        // Check if employee was hired after a deadline (not applicable for that item)
+        // Get effective deadline:
+        // - Hired before deadline with 6+ weeks: standard deadline
+        // - Hired before deadline with <6 weeks: hire + 6 weeks
+        // - Hired after deadline: null (exempt)
+        function getEffectiveDeadline(hireDate, deadline) {
+            if (!deadline) return null;
+            if (!hireDate) return deadline;
+            const hire = new Date(hireDate);
+            hire.setHours(0, 0, 0, 0);
+            // Hired after deadline = exempt
+            if (hire > deadline) return null;
+            // Hired before deadline but less than 6 weeks
+            const personalDeadline = new Date(hire);
+            personalDeadline.setDate(personalDeadline.getDate() + 42);
+            if (personalDeadline > deadline) {
+                return personalDeadline;
+            }
+            return deadline;
+        }
+
+        // Check if employee was hired after a deadline
         function wasHiredAfterDeadline(hireDate, deadline) {
             if (!hireDate || !deadline) return false;
             const hire = new Date(hireDate);
             hire.setHours(0, 0, 0, 0);
             return hire > deadline;
+        }
+
+        // Check if hire date gives less than 6 weeks before deadline (late hire)
+        function isLateHire(hireDate, deadline) {
+            if (!hireDate || !deadline) return false;
+            const hire = new Date(hireDate);
+            hire.setHours(0, 0, 0, 0);
+            const personalDeadline = new Date(hire);
+            personalDeadline.setDate(personalDeadline.getDate() + 42);
+            return personalDeadline > deadline;
         }
 
         // Format deadline for display
@@ -1499,59 +1529,66 @@
             });
         }
 
-        // Get PMAP icon HTML with deadline and hire date awareness
-        function getPmapIcon(status, label, deadline = null, hireDate = null) {
+        // Get PMAP icon HTML
+        // opts: { wrongForm, isLoa }
+        function getPmapIcon(status, label, standardDeadline = null, hireDate = null, opts = {}) {
             const complete = isComplete(status);
+            const effectiveDeadline = getEffectiveDeadline(hireDate, standardDeadline);
+            const lateHire = isLateHire(hireDate, standardDeadline);
+            const lateLabel = lateHire ? ' (New Hire — due ' + formatDeadline(effectiveDeadline) + ')' : '';
+            const checkSvg = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            const xSvg = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
 
-            // If hired after deadline, this item is N/A for this employee
-            if (!complete && wasHiredAfterDeadline(hireDate, deadline)) {
-                return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-slate-50 text-slate-300" title="${label}: N/A (hired after deadline)">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
-                    </svg>
-                </span>`;
+            // Complete + wrong form: green check in red box
+            if (complete && opts.wrongForm) {
+                const wfDetail = opts.teacherForm ? 'Teacher form used for Support staff'
+                    : label.startsWith('SR') ? 'submitted on PMAP form'
+                    : label.startsWith('PMAP') ? 'submitted on SR form' : 'wrong form used';
+                return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-emerald-50 text-emerald-600 ring-2 ring-red-400" title="${label}: Complete — ${wfDetail}${lateLabel}">${checkSvg}</span>`;
             }
 
-            const overdue = !complete && isOverdue(deadline);
-            const dueSoon = !complete && !overdue && isWithinTwoWeeks(deadline);
-
+            // Complete: green check
             if (complete) {
-                return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-emerald-50 text-emerald-600" title="${label}: Complete">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
+                return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-emerald-50 text-emerald-600" title="${label}: Complete${lateLabel}">${checkSvg}</span>`;
+            }
+
+            // Incomplete + on LOA: exempt
+            if (opts.isLoa) {
+                return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-amber-50 text-amber-500" title="${label}: On LOA — exempt">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
                 </span>`;
             }
 
-            // Overdue - show with red background
+            // Hired after deadline: exempt
+            if (!effectiveDeadline) {
+                return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-slate-50 text-slate-300" title="${label}: N/A (hired after deadline)">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
+                </span>`;
+            }
+
+            const overdue = isOverdue(effectiveDeadline);
+            const dueSoon = !overdue && isWithinTwoWeeks(effectiveDeadline);
+
+            // Overdue: red X
             if (overdue) {
-                return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-red-100 text-red-600 ring-2 ring-red-300" title="${label}: OVERDUE (was due ${formatDeadline(deadline)})">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                    </svg>
-                </span>`;
+                return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-red-100 text-red-600" title="${label}: OVERDUE${lateLabel} (was due ${formatDeadline(effectiveDeadline)})">${xSvg}</span>`;
             }
 
-            // Due within 2 weeks - show amber reminder
+            // Due soon: amber clock
             if (dueSoon) {
-                return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-amber-50 text-amber-500" title="${label}: Due soon (due ${formatDeadline(deadline)})">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
+                return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-amber-50 text-amber-500" title="${label}: Due soon${lateLabel} (due ${formatDeadline(effectiveDeadline)})">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </span>`;
             }
 
-            // Not complete but not due for a while - show neutral gray
-            return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-slate-100 text-slate-400" title="${label}: Pending (due ${formatDeadline(deadline)})">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
+            // Pending: gray clock
+            return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-slate-100 text-slate-400" title="${label}: Pending${lateLabel} (due ${formatDeadline(effectiveDeadline)})">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </span>`;
         }
 
         // Get PMAP icons for a staff member based on their user type
         function getPmapIconsForStaff(staff) {
-            // Hourly employees don't receive PMAPs
             if (staff.Salary_or_Hourly === 'Hourly') {
                 return '';
             }
@@ -1559,15 +1596,33 @@
             const userType = staff.Job_Function || '';
             const deadlines = getDeadlines(userType);
             const hireDate = staff.Last_Hire_Date;
+            const isLoa = (staff.Employment_Status || '').toLowerCase() === 'leave of absence';
+            const isSupport = !deadlines.hasSecondRound;
+
+            let sr1 = staff.self_reflection_1_count;
+            let pmap1 = staff.pmap_1_count;
+            let sr1wf = staff.sr1_wrong_form || (isSupport && staff.teacher_form_sr1);
+            let pmap1wf = staff.pmap1_wrong_form || (isSupport && staff.teacher_form_pmap1);
+
+            // Support/Operations: if they did round 2 forms, count as round 1
+            if (isSupport) {
+                if (!isComplete(sr1) && isComplete(staff.self_reflection_2_count)) {
+                    sr1 = staff.self_reflection_2_count;
+                    sr1wf = staff.sr2_wrong_form || (isSupport && staff.teacher_form_sr2);
+                }
+                if (!isComplete(pmap1) && isComplete(staff.pmap_2_count)) {
+                    pmap1 = staff.pmap_2_count;
+                    pmap1wf = staff.pmap2_wrong_form || (isSupport && staff.teacher_form_pmap2);
+                }
+            }
 
             let icons = '';
-            icons += getPmapIcon(staff.self_reflection_1_count, 'SR1', deadlines.sr1, hireDate);
-            icons += getPmapIcon(staff.pmap_1_count, 'PMAP1', deadlines.pmap1, hireDate);
+            icons += getPmapIcon(sr1, 'SR1', deadlines.sr1, hireDate, { isLoa, wrongForm: sr1wf, teacherForm: isSupport && staff.teacher_form_sr1 });
+            icons += getPmapIcon(pmap1, 'PMAP1', deadlines.pmap1, hireDate, { isLoa, wrongForm: pmap1wf, teacherForm: isSupport && staff.teacher_form_pmap1 });
 
-            // Only show SR2/PMAP2 if this user type has them
             if (deadlines.hasSecondRound) {
-                icons += getPmapIcon(staff.self_reflection_2_count, 'SR2', deadlines.sr2, hireDate);
-                icons += getPmapIcon(staff.pmap_2_count, 'PMAP2', deadlines.pmap2, hireDate);
+                icons += getPmapIcon(staff.self_reflection_2_count, 'SR2', deadlines.sr2, hireDate, { isLoa, wrongForm: staff.sr2_wrong_form });
+                icons += getPmapIcon(staff.pmap_2_count, 'PMAP2', deadlines.pmap2, hireDate, { isLoa, wrongForm: staff.pmap2_wrong_form });
             }
 
             return icons;
@@ -2006,59 +2061,94 @@
             document.getElementById('detailDisciplinary').textContent =
                 `${staff.iap_count || 0} IAPs, ${staff.writeup_count || 0} Write-ups`;
 
-            // PMAP chips - user type aware (hourly employees don't receive PMAPs)
+            // PMAP chips - matches icon logic exactly
             const chipsContainer = document.getElementById('detailComplianceChips');
             chipsContainer.innerHTML = '';
 
             const isHourly = staff.Salary_or_Hourly === 'Hourly';
+            const isLoaDetail = (staff.Employment_Status || '').toLowerCase() === 'leave of absence';
             const userType = staff.Job_Function || '';
             const deadlines = getDeadlines(userType);
             const hireDate = staff.Last_Hire_Date;
+            const isSupport = !deadlines.hasSecondRound;
+
+            const checkIcon = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            const xIcon = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+            const dashIcon = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>';
+            const clockIcon = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
 
             let pmapItems = [];
             if (!isHourly) {
+                let sr1 = staff.self_reflection_1_count;
+                let pmap1 = staff.pmap_1_count;
+                let sr1wf = staff.sr1_wrong_form || (isSupport && staff.teacher_form_sr1);
+                let pmap1wf = staff.pmap1_wrong_form || (isSupport && staff.teacher_form_pmap1);
+                let sr1tf = isSupport && staff.teacher_form_sr1;
+                let pmap1tf = isSupport && staff.teacher_form_pmap1;
+
+                if (isSupport) {
+                    if (!isComplete(sr1) && isComplete(staff.self_reflection_2_count)) {
+                        sr1 = staff.self_reflection_2_count;
+                        sr1wf = staff.sr2_wrong_form || (isSupport && staff.teacher_form_sr2);
+                        sr1tf = isSupport && staff.teacher_form_sr2;
+                    }
+                    if (!isComplete(pmap1) && isComplete(staff.pmap_2_count)) {
+                        pmap1 = staff.pmap_2_count;
+                        pmap1wf = staff.pmap2_wrong_form || (isSupport && staff.teacher_form_pmap2);
+                        pmap1tf = isSupport && staff.teacher_form_pmap2;
+                    }
+                }
+
                 pmapItems = [
-                    { label: 'SR1', complete: isComplete(staff.self_reflection_1_count), deadline: deadlines.sr1 },
-                    { label: 'PMAP1', complete: isComplete(staff.pmap_1_count), deadline: deadlines.pmap1 }
+                    { label: 'SR1', count: sr1, deadline: deadlines.sr1, wrongForm: sr1wf, teacherForm: sr1tf },
+                    { label: 'PMAP1', count: pmap1, deadline: deadlines.pmap1, wrongForm: pmap1wf, teacherForm: pmap1tf }
                 ];
 
-                // Only add SR2/PMAP2 if this user type has them
                 if (deadlines.hasSecondRound) {
                     pmapItems.push(
-                        { label: 'SR2', complete: isComplete(staff.self_reflection_2_count), deadline: deadlines.sr2 },
-                        { label: 'PMAP2', complete: isComplete(staff.pmap_2_count), deadline: deadlines.pmap2 }
+                        { label: 'SR2', count: staff.self_reflection_2_count, deadline: deadlines.sr2, wrongForm: staff.sr2_wrong_form, teacherForm: false },
+                        { label: 'PMAP2', count: staff.pmap_2_count, deadline: deadlines.pmap2, wrongForm: staff.pmap2_wrong_form, teacherForm: false }
                     );
                 }
             }
 
             pmapItems.forEach(item => {
-                const hiredAfter = !item.complete && wasHiredAfterDeadline(hireDate, item.deadline);
-                const overdue = !item.complete && !hiredAfter && isOverdue(item.deadline);
-                const dueSoon = !item.complete && !hiredAfter && !overdue && isWithinTwoWeeks(item.deadline);
+                const complete = isComplete(item.count);
+                const effDeadline = getEffectiveDeadline(hireDate, item.deadline);
+                const lateHire = isLateHire(hireDate, item.deadline);
+                const overdue = !complete && !isLoaDetail && isOverdue(effDeadline);
+                const dueSoon = !complete && !isLoaDetail && !overdue && isWithinTwoWeeks(effDeadline);
                 let chipClass, icon, statusText;
 
-                if (item.complete) {
+                if (complete && item.wrongForm) {
+                    const wfNote = item.teacherForm ? 'Teacher form used' : item.label.startsWith('SR') ? 'Submitted on PMAP form' : 'Submitted on SR form';
+                    chipClass = 'bg-emerald-50 text-emerald-700 border-emerald-200 ring-2 ring-red-400';
+                    icon = checkIcon;
+                    statusText = wfNote;
+                } else if (complete) {
                     chipClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-                    icon = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                    icon = checkIcon;
                     statusText = 'Complete';
-                } else if (hiredAfter) {
-                    // Hired after deadline - N/A
+                } else if (isLoaDetail) {
+                    chipClass = 'bg-amber-50 text-amber-600 border-amber-200';
+                    icon = dashIcon;
+                    statusText = 'On LOA';
+                } else if (!effDeadline) {
                     chipClass = 'bg-slate-50 text-slate-300 border-slate-200';
-                    icon = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>';
-                    statusText = 'N/A';
+                    icon = dashIcon;
+                    statusText = 'N/A (hired after deadline)';
                 } else if (overdue) {
-                    chipClass = 'bg-red-100 text-red-700 border-red-300 ring-1 ring-red-300';
-                    icon = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>';
-                    statusText = `OVERDUE`;
+                    chipClass = 'bg-red-100 text-red-700 border-red-300';
+                    icon = xIcon;
+                    statusText = lateHire ? `OVERDUE (New Hire — due ${formatDeadline(effDeadline)})` : `OVERDUE (due ${formatDeadline(effDeadline)})`;
                 } else if (dueSoon) {
                     chipClass = 'bg-amber-50 text-amber-700 border-amber-200';
-                    icon = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
-                    statusText = `Due ${formatDeadline(item.deadline)}`;
+                    icon = clockIcon;
+                    statusText = lateHire ? `New Hire — due ${formatDeadline(effDeadline)}` : `Due ${formatDeadline(effDeadline)}`;
                 } else {
-                    // Not complete but not due soon - neutral gray
                     chipClass = 'bg-slate-50 text-slate-500 border-slate-200';
-                    icon = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
-                    statusText = `Due ${formatDeadline(item.deadline)}`;
+                    icon = clockIcon;
+                    statusText = lateHire ? `New Hire — due ${formatDeadline(effDeadline)}` : `Due ${formatDeadline(effDeadline)}`;
                 }
 
                 const chip = document.createElement('div');

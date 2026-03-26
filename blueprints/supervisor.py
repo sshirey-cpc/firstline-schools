@@ -175,26 +175,60 @@ def get_team_staff():
                 FROM `{PROJECT_ID}.sabbatical.applications`
                 WHERE status NOT IN ('Denied')
             ),
+            classified_obs AS (
+                SELECT DISTINCT
+                    teacher_internal_id,
+                    teacher_name,
+                    observer_name,
+                    observation_type,
+                    observed_at,
+                    rubric_form,
+                    LOWER(TRIM(teacher_name)) = LOWER(TRIM(observer_name)) AS is_self,
+                    CASE WHEN observation_type LIKE '%2%' THEN 2 ELSE 1 END AS form_round,
+                    LOWER(TRIM(teacher_name)) = LOWER(TRIM(observer_name))
+                        AND observation_type LIKE '%PMAP%' AS is_self_pmap,
+                    LOWER(TRIM(teacher_name)) != LOWER(TRIM(observer_name))
+                        AND observation_type LIKE '%Self-Reflection%' AS is_other_sr,
+                    CASE
+                        WHEN (observation_type LIKE '%PMAP%' OR observation_type LIKE '%Self-Reflection%')
+                             AND rubric_form LIKE '%Teacher%' THEN 'teacher'
+                        ELSE NULL
+                    END AS rubric_role
+                FROM `{PROJECT_ID}.{DATASET_ID}.observations_raw_native`
+                WHERE teacher_internal_id IS NOT NULL
+                AND is_published = 1
+                AND observed_at >= '{CURRENT_SY_START}'
+            ),
             published_obs_counts AS (
                 SELECT
                     teacher_internal_id,
                     COUNT(*) as total_published,
-                    COUNTIF(observation_type = 'Self-Reflection 1') as sr1_finalized,
-                    COUNTIF(observation_type = 'PMAP 1') as pmap1_finalized,
-                    COUNTIF(observation_type = 'Self-Reflection 2') as sr2_finalized,
-                    COUNTIF(observation_type = 'PMAP 2') as pmap2_finalized
-                FROM (
-                    SELECT DISTINCT
-                        teacher_internal_id,
-                        observation_type,
-                        observed_at,
-                        observer_name,
-                        rubric_form
-                    FROM `{PROJECT_ID}.{DATASET_ID}.observations_raw_native`
-                    WHERE teacher_internal_id IS NOT NULL
-                    AND is_published = 1
-                    AND observed_at >= '{CURRENT_SY_START}'
-                )
+                    COUNTIF(is_self AND form_round = 1) as sr1_finalized,
+                    COUNTIF(is_self AND form_round = 2) as sr2_finalized,
+                    COUNTIF(NOT is_self AND form_round = 1
+                            AND (observation_type LIKE '%PMAP%' OR observation_type LIKE '%Self-Reflection%')) as pmap1_finalized,
+                    COUNTIF(NOT is_self AND form_round = 2
+                            AND (observation_type LIKE '%PMAP%' OR observation_type LIKE '%Self-Reflection%')) as pmap2_finalized,
+                    -- Per-icon wrong form flags
+                    -- Wrong form: flag only when wrong form is the ONLY version for that round
+                    -- SR wrong form = did PMAP as self (self_pmap) but never did a proper SR
+                    (COUNTIF(is_self_pmap AND form_round = 1) > 0
+                        AND COUNTIF(is_self AND form_round = 1 AND NOT is_self_pmap) = 0) as sr1_wrong_form,
+                    (COUNTIF(is_self_pmap AND form_round = 2) > 0
+                        AND COUNTIF(is_self AND form_round = 2 AND NOT is_self_pmap) = 0) as sr2_wrong_form,
+                    -- PMAP wrong form = supervisor used SR form but never did a proper PMAP
+                    (COUNTIF(is_other_sr AND form_round = 1) > 0
+                        AND COUNTIF(NOT is_self AND form_round = 1 AND NOT is_other_sr
+                            AND (observation_type LIKE '%PMAP%')) = 0) as pmap1_wrong_form,
+                    (COUNTIF(is_other_sr AND form_round = 2) > 0
+                        AND COUNTIF(NOT is_self AND form_round = 2 AND NOT is_other_sr
+                            AND (observation_type LIKE '%PMAP%')) = 0) as pmap2_wrong_form,
+                    COUNTIF(rubric_role = 'teacher') as teacher_rubric_count,
+                    COUNTIF(rubric_role = 'teacher' AND is_self AND form_round = 1) > 0 as teacher_form_sr1,
+                    COUNTIF(rubric_role = 'teacher' AND is_self AND form_round = 2) > 0 as teacher_form_sr2,
+                    COUNTIF(rubric_role = 'teacher' AND NOT is_self AND form_round = 1) > 0 as teacher_form_pmap1,
+                    COUNTIF(rubric_role = 'teacher' AND NOT is_self AND form_round = 2) > 0 as teacher_form_pmap2
+                FROM classified_obs
                 GROUP BY teacher_internal_id
             ),
             last_published_obs AS (
@@ -208,18 +242,7 @@ def get_team_staff():
                         observation_type,
                         observed_at,
                         ROW_NUMBER() OVER (PARTITION BY teacher_internal_id ORDER BY observed_at DESC) as rn
-                    FROM (
-                        SELECT DISTINCT
-                            teacher_internal_id,
-                            observation_type,
-                            observed_at,
-                            observer_name,
-                            rubric_form
-                        FROM `{PROJECT_ID}.{DATASET_ID}.observations_raw_native`
-                        WHERE teacher_internal_id IS NOT NULL
-                        AND is_published = 1
-                        AND observed_at >= '{CURRENT_SY_START}'
-                    )
+                    FROM classified_obs
                 )
                 WHERE rn = 1
             )
@@ -248,6 +271,15 @@ def get_team_staff():
                 COALESCE(poc.sr2_finalized, 0) as self_reflection_2_count,
                 COALESCE(poc.pmap1_finalized, 0) as pmap_1_count,
                 COALESCE(poc.pmap2_finalized, 0) as pmap_2_count,
+                COALESCE(poc.sr1_wrong_form, FALSE) as sr1_wrong_form,
+                COALESCE(poc.sr2_wrong_form, FALSE) as sr2_wrong_form,
+                COALESCE(poc.pmap1_wrong_form, FALSE) as pmap1_wrong_form,
+                COALESCE(poc.pmap2_wrong_form, FALSE) as pmap2_wrong_form,
+                COALESCE(poc.teacher_rubric_count, 0) as teacher_rubric_count,
+                COALESCE(poc.teacher_form_sr1, FALSE) as teacher_form_sr1,
+                COALESCE(poc.teacher_form_sr2, FALSE) as teacher_form_sr2,
+                COALESCE(poc.teacher_form_pmap1, FALSE) as teacher_form_pmap1,
+                COALESCE(poc.teacher_form_pmap2, FALSE) as teacher_form_pmap2,
                 s.iap_count,
                 s.writeup_count,
                 COALESCE(lpo.last_published_type, s.last_observation_type) as last_observation_type,
@@ -445,26 +477,60 @@ def get_staff(supervisor_name):
                 FROM `{PROJECT_ID}.sabbatical.applications`
                 WHERE status NOT IN ('Denied')
             ),
+            classified_obs AS (
+                SELECT DISTINCT
+                    teacher_internal_id,
+                    teacher_name,
+                    observer_name,
+                    observation_type,
+                    observed_at,
+                    rubric_form,
+                    LOWER(TRIM(teacher_name)) = LOWER(TRIM(observer_name)) AS is_self,
+                    CASE WHEN observation_type LIKE '%2%' THEN 2 ELSE 1 END AS form_round,
+                    LOWER(TRIM(teacher_name)) = LOWER(TRIM(observer_name))
+                        AND observation_type LIKE '%PMAP%' AS is_self_pmap,
+                    LOWER(TRIM(teacher_name)) != LOWER(TRIM(observer_name))
+                        AND observation_type LIKE '%Self-Reflection%' AS is_other_sr,
+                    CASE
+                        WHEN (observation_type LIKE '%PMAP%' OR observation_type LIKE '%Self-Reflection%')
+                             AND rubric_form LIKE '%Teacher%' THEN 'teacher'
+                        ELSE NULL
+                    END AS rubric_role
+                FROM `{PROJECT_ID}.{DATASET_ID}.observations_raw_native`
+                WHERE teacher_internal_id IS NOT NULL
+                AND is_published = 1
+                AND observed_at >= '{CURRENT_SY_START}'
+            ),
             published_obs_counts AS (
                 SELECT
                     teacher_internal_id,
                     COUNT(*) as total_published,
-                    COUNTIF(observation_type = 'Self-Reflection 1') as sr1_finalized,
-                    COUNTIF(observation_type = 'PMAP 1') as pmap1_finalized,
-                    COUNTIF(observation_type = 'Self-Reflection 2') as sr2_finalized,
-                    COUNTIF(observation_type = 'PMAP 2') as pmap2_finalized
-                FROM (
-                    SELECT DISTINCT
-                        teacher_internal_id,
-                        observation_type,
-                        observed_at,
-                        observer_name,
-                        rubric_form
-                    FROM `{PROJECT_ID}.{DATASET_ID}.observations_raw_native`
-                    WHERE teacher_internal_id IS NOT NULL
-                    AND is_published = 1
-                    AND observed_at >= '{CURRENT_SY_START}'
-                )
+                    COUNTIF(is_self AND form_round = 1) as sr1_finalized,
+                    COUNTIF(is_self AND form_round = 2) as sr2_finalized,
+                    COUNTIF(NOT is_self AND form_round = 1
+                            AND (observation_type LIKE '%PMAP%' OR observation_type LIKE '%Self-Reflection%')) as pmap1_finalized,
+                    COUNTIF(NOT is_self AND form_round = 2
+                            AND (observation_type LIKE '%PMAP%' OR observation_type LIKE '%Self-Reflection%')) as pmap2_finalized,
+                    -- Per-icon wrong form flags
+                    -- Wrong form: flag only when wrong form is the ONLY version for that round
+                    -- SR wrong form = did PMAP as self (self_pmap) but never did a proper SR
+                    (COUNTIF(is_self_pmap AND form_round = 1) > 0
+                        AND COUNTIF(is_self AND form_round = 1 AND NOT is_self_pmap) = 0) as sr1_wrong_form,
+                    (COUNTIF(is_self_pmap AND form_round = 2) > 0
+                        AND COUNTIF(is_self AND form_round = 2 AND NOT is_self_pmap) = 0) as sr2_wrong_form,
+                    -- PMAP wrong form = supervisor used SR form but never did a proper PMAP
+                    (COUNTIF(is_other_sr AND form_round = 1) > 0
+                        AND COUNTIF(NOT is_self AND form_round = 1 AND NOT is_other_sr
+                            AND (observation_type LIKE '%PMAP%')) = 0) as pmap1_wrong_form,
+                    (COUNTIF(is_other_sr AND form_round = 2) > 0
+                        AND COUNTIF(NOT is_self AND form_round = 2 AND NOT is_other_sr
+                            AND (observation_type LIKE '%PMAP%')) = 0) as pmap2_wrong_form,
+                    COUNTIF(rubric_role = 'teacher') as teacher_rubric_count,
+                    COUNTIF(rubric_role = 'teacher' AND is_self AND form_round = 1) > 0 as teacher_form_sr1,
+                    COUNTIF(rubric_role = 'teacher' AND is_self AND form_round = 2) > 0 as teacher_form_sr2,
+                    COUNTIF(rubric_role = 'teacher' AND NOT is_self AND form_round = 1) > 0 as teacher_form_pmap1,
+                    COUNTIF(rubric_role = 'teacher' AND NOT is_self AND form_round = 2) > 0 as teacher_form_pmap2
+                FROM classified_obs
                 GROUP BY teacher_internal_id
             ),
             last_published_obs AS (
@@ -478,18 +544,7 @@ def get_staff(supervisor_name):
                         observation_type,
                         observed_at,
                         ROW_NUMBER() OVER (PARTITION BY teacher_internal_id ORDER BY observed_at DESC) as rn
-                    FROM (
-                        SELECT DISTINCT
-                            teacher_internal_id,
-                            observation_type,
-                            observed_at,
-                            observer_name,
-                            rubric_form
-                        FROM `{PROJECT_ID}.{DATASET_ID}.observations_raw_native`
-                        WHERE teacher_internal_id IS NOT NULL
-                        AND is_published = 1
-                        AND observed_at >= '{CURRENT_SY_START}'
-                    )
+                    FROM classified_obs
                 )
                 WHERE rn = 1
             )
@@ -518,6 +573,15 @@ def get_staff(supervisor_name):
                 COALESCE(poc.sr2_finalized, 0) as self_reflection_2_count,
                 COALESCE(poc.pmap1_finalized, 0) as pmap_1_count,
                 COALESCE(poc.pmap2_finalized, 0) as pmap_2_count,
+                COALESCE(poc.sr1_wrong_form, FALSE) as sr1_wrong_form,
+                COALESCE(poc.sr2_wrong_form, FALSE) as sr2_wrong_form,
+                COALESCE(poc.pmap1_wrong_form, FALSE) as pmap1_wrong_form,
+                COALESCE(poc.pmap2_wrong_form, FALSE) as pmap2_wrong_form,
+                COALESCE(poc.teacher_rubric_count, 0) as teacher_rubric_count,
+                COALESCE(poc.teacher_form_sr1, FALSE) as teacher_form_sr1,
+                COALESCE(poc.teacher_form_sr2, FALSE) as teacher_form_sr2,
+                COALESCE(poc.teacher_form_pmap1, FALSE) as teacher_form_pmap1,
+                COALESCE(poc.teacher_form_pmap2, FALSE) as teacher_form_pmap2,
                 s.iap_count,
                 s.writeup_count,
                 COALESCE(lpo.last_published_type, s.last_observation_type) as last_observation_type,

@@ -337,6 +337,20 @@
         </header>
 
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <!-- View Toggle -->
+            <div class="flex gap-2 mb-4">
+                <button id="staffViewBtn" onclick="switchHrView('staff')" class="px-4 py-2 text-sm font-semibold rounded-lg bg-fls-navy text-white transition-colors">Staff View</button>
+                <button id="pmapViewBtn" onclick="switchHrView('pmap')" class="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">PMAP Tracker</button>
+            </div>
+
+            <!-- PMAP Tracker View -->
+            <div id="pmapTrackerView" class="hidden">
+                <div id="pmapSchoolCards" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6"></div>
+                <div id="pmapDrillDown"></div>
+            </div>
+
+            <!-- Staff View (existing) -->
+            <div id="staffView">
             <!-- Filter Bar -->
             <div class="bg-white rounded-xl border border-slate-200 p-4 mb-6">
                 <div class="flex flex-wrap items-end gap-4">
@@ -487,6 +501,7 @@
                     <p class="text-slate-500 text-sm">No staff members found matching your criteria.</p>
                 </div>
             </div>
+            </div><!-- end staffView -->
         </main>
     </div>
 
@@ -1079,12 +1094,40 @@
             return today >= twoWeeksBefore && today <= deadline;
         }
 
-        // Check if employee was hired after a deadline (not applicable for that item)
+        // Get effective deadline:
+        // - Hired before deadline with 6+ weeks: standard deadline
+        // - Hired before deadline with <6 weeks: hire + 6 weeks
+        // - Hired after deadline: null (exempt)
+        function getEffectiveDeadline(hireDate, deadline) {
+            if (!deadline) return null;
+            if (!hireDate) return deadline;
+            const hire = new Date(hireDate);
+            hire.setHours(0, 0, 0, 0);
+            if (hire > deadline) return null;
+            const personalDeadline = new Date(hire);
+            personalDeadline.setDate(personalDeadline.getDate() + 42);
+            if (personalDeadline > deadline) {
+                return personalDeadline;
+            }
+            return deadline;
+        }
+
+        // Check if employee was hired after a deadline
         function wasHiredAfterDeadline(hireDate, deadline) {
             if (!hireDate || !deadline) return false;
             const hire = new Date(hireDate);
             hire.setHours(0, 0, 0, 0);
             return hire > deadline;
+        }
+
+        // Check if hire date gives less than 6 weeks before deadline (late hire)
+        function isLateHire(hireDate, deadline) {
+            if (!hireDate || !deadline) return false;
+            const hire = new Date(hireDate);
+            hire.setHours(0, 0, 0, 0);
+            const personalDeadline = new Date(hire);
+            personalDeadline.setDate(personalDeadline.getDate() + 42);
+            return personalDeadline > deadline;
         }
 
         // Format deadline for display
@@ -1756,59 +1799,66 @@
             });
         }
 
-        // Get PMAP icon HTML with deadline and hire date awareness
-        function getPmapIcon(status, label, deadline = null, hireDate = null) {
+        // Get PMAP icon HTML
+        // opts: { wrongForm, isLoa }
+        function getPmapIcon(status, label, standardDeadline = null, hireDate = null, opts = {}) {
             const complete = isComplete(status);
+            const effectiveDeadline = getEffectiveDeadline(hireDate, standardDeadline);
+            const lateHire = isLateHire(hireDate, standardDeadline);
+            const lateLabel = lateHire ? ' (New Hire — due ' + formatDeadline(effectiveDeadline) + ')' : '';
+            const checkSvg = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            const xSvg = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
 
-            // If hired after deadline, this item is N/A for this employee
-            if (!complete && wasHiredAfterDeadline(hireDate, deadline)) {
-                return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-slate-50 text-slate-300" title="${label}: N/A (hired after deadline)">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
-                    </svg>
-                </span>`;
+            // Complete + wrong form: green check in red box
+            if (complete && opts.wrongForm) {
+                const wfDetail = opts.teacherForm ? 'Teacher form used for Support staff'
+                    : label.startsWith('SR') ? 'submitted on PMAP form'
+                    : label.startsWith('PMAP') ? 'submitted on SR form' : 'wrong form used';
+                return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-emerald-50 text-emerald-600 ring-2 ring-red-400" title="${label}: Complete — ${wfDetail}${lateLabel}">${checkSvg}</span>`;
             }
 
-            const overdue = !complete && isOverdue(deadline);
-            const dueSoon = !complete && !overdue && isWithinTwoWeeks(deadline);
-
+            // Complete: green check
             if (complete) {
-                return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-emerald-50 text-emerald-600" title="${label}: Complete">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
+                return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-emerald-50 text-emerald-600" title="${label}: Complete${lateLabel}">${checkSvg}</span>`;
+            }
+
+            // Incomplete + on LOA: exempt
+            if (opts.isLoa) {
+                return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-amber-50 text-amber-500" title="${label}: On LOA — exempt">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
                 </span>`;
             }
 
-            // Overdue - show with red background
+            // Hired after deadline: exempt
+            if (!effectiveDeadline) {
+                return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-slate-50 text-slate-300" title="${label}: N/A (hired after deadline)">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
+                </span>`;
+            }
+
+            const overdue = isOverdue(effectiveDeadline);
+            const dueSoon = !overdue && isWithinTwoWeeks(effectiveDeadline);
+
+            // Overdue: red X
             if (overdue) {
-                return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-red-100 text-red-600 ring-2 ring-red-300" title="${label}: OVERDUE (was due ${formatDeadline(deadline)})">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                    </svg>
-                </span>`;
+                return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-red-100 text-red-600" title="${label}: OVERDUE${lateLabel} (was due ${formatDeadline(effectiveDeadline)})">${xSvg}</span>`;
             }
 
-            // Due within 2 weeks - show amber reminder
+            // Due soon: amber clock
             if (dueSoon) {
-                return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-amber-50 text-amber-500" title="${label}: Due soon (due ${formatDeadline(deadline)})">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
+                return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-amber-50 text-amber-500" title="${label}: Due soon${lateLabel} (due ${formatDeadline(effectiveDeadline)})">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </span>`;
             }
 
-            // Not complete but not due for a while - show neutral gray
-            return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-slate-100 text-slate-400" title="${label}: Pending (due ${formatDeadline(deadline)})">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
+            // Pending: gray clock
+            return `<span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-slate-100 text-slate-400" title="${label}: Pending${lateLabel} (due ${formatDeadline(effectiveDeadline)})">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </span>`;
         }
 
         // Get PMAP icons for a staff member based on their user type
         function getPmapIconsForStaff(staff) {
-            // Hourly employees don't receive PMAPs
             if (staff.Salary_or_Hourly === 'Hourly') {
                 return '';
             }
@@ -1816,15 +1866,32 @@
             const userType = staff.Job_Function || '';
             const deadlines = getDeadlines(userType);
             const hireDate = staff.Last_Hire_Date;
+            const isLoa = (staff.Employment_Status || '').toLowerCase() === 'leave of absence';
+            const isSupport = !deadlines.hasSecondRound;
+
+            let sr1 = staff.self_reflection_1_count;
+            let pmap1 = staff.pmap_1_count;
+            let sr1wf = staff.sr1_wrong_form || (isSupport && staff.teacher_form_sr1);
+            let pmap1wf = staff.pmap1_wrong_form || (isSupport && staff.teacher_form_pmap1);
+
+            if (isSupport) {
+                if (!isComplete(sr1) && isComplete(staff.self_reflection_2_count)) {
+                    sr1 = staff.self_reflection_2_count;
+                    sr1wf = staff.sr2_wrong_form || (isSupport && staff.teacher_form_sr2);
+                }
+                if (!isComplete(pmap1) && isComplete(staff.pmap_2_count)) {
+                    pmap1 = staff.pmap_2_count;
+                    pmap1wf = staff.pmap2_wrong_form || (isSupport && staff.teacher_form_pmap2);
+                }
+            }
 
             let icons = '';
-            icons += getPmapIcon(staff.self_reflection_1_count, 'SR1', deadlines.sr1, hireDate);
-            icons += getPmapIcon(staff.pmap_1_count, 'PMAP1', deadlines.pmap1, hireDate);
+            icons += getPmapIcon(sr1, 'SR1', deadlines.sr1, hireDate, { isLoa, wrongForm: sr1wf, teacherForm: isSupport && staff.teacher_form_sr1 });
+            icons += getPmapIcon(pmap1, 'PMAP1', deadlines.pmap1, hireDate, { isLoa, wrongForm: pmap1wf, teacherForm: isSupport && staff.teacher_form_pmap1 });
 
-            // Only show SR2/PMAP2 if this user type has them
             if (deadlines.hasSecondRound) {
-                icons += getPmapIcon(staff.self_reflection_2_count, 'SR2', deadlines.sr2, hireDate);
-                icons += getPmapIcon(staff.pmap_2_count, 'PMAP2', deadlines.pmap2, hireDate);
+                icons += getPmapIcon(staff.self_reflection_2_count, 'SR2', deadlines.sr2, hireDate, { isLoa, wrongForm: staff.sr2_wrong_form });
+                icons += getPmapIcon(staff.pmap_2_count, 'PMAP2', deadlines.pmap2, hireDate, { isLoa, wrongForm: staff.pmap2_wrong_form });
             }
 
             return icons;
@@ -2263,59 +2330,94 @@
             document.getElementById('detailDisciplinary').textContent =
                 `${staff.iap_count || 0} IAPs, ${staff.writeup_count || 0} Write-ups`;
 
-            // PMAP chips - user type aware (hourly employees don't receive PMAPs)
+            // PMAP chips - matches icon logic exactly
             const chipsContainer = document.getElementById('detailComplianceChips');
             chipsContainer.innerHTML = '';
 
             const isHourly = staff.Salary_or_Hourly === 'Hourly';
+            const isLoaDetail = (staff.Employment_Status || '').toLowerCase() === 'leave of absence';
             const userType = staff.Job_Function || '';
             const deadlines = getDeadlines(userType);
             const hireDate = staff.Last_Hire_Date;
+            const isSupport = !deadlines.hasSecondRound;
+
+            const checkIcon = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            const xIcon = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+            const dashIcon = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>';
+            const clockIcon = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
 
             let pmapItems = [];
             if (!isHourly) {
+                let sr1 = staff.self_reflection_1_count;
+                let pmap1 = staff.pmap_1_count;
+                let sr1wf = staff.sr1_wrong_form || (isSupport && staff.teacher_form_sr1);
+                let pmap1wf = staff.pmap1_wrong_form || (isSupport && staff.teacher_form_pmap1);
+                let sr1tf = isSupport && staff.teacher_form_sr1;
+                let pmap1tf = isSupport && staff.teacher_form_pmap1;
+
+                if (isSupport) {
+                    if (!isComplete(sr1) && isComplete(staff.self_reflection_2_count)) {
+                        sr1 = staff.self_reflection_2_count;
+                        sr1wf = staff.sr2_wrong_form || (isSupport && staff.teacher_form_sr2);
+                        sr1tf = isSupport && staff.teacher_form_sr2;
+                    }
+                    if (!isComplete(pmap1) && isComplete(staff.pmap_2_count)) {
+                        pmap1 = staff.pmap_2_count;
+                        pmap1wf = staff.pmap2_wrong_form || (isSupport && staff.teacher_form_pmap2);
+                        pmap1tf = isSupport && staff.teacher_form_pmap2;
+                    }
+                }
+
                 pmapItems = [
-                    { label: 'SR1', complete: isComplete(staff.self_reflection_1_count), deadline: deadlines.sr1 },
-                    { label: 'PMAP1', complete: isComplete(staff.pmap_1_count), deadline: deadlines.pmap1 }
+                    { label: 'SR1', count: sr1, deadline: deadlines.sr1, wrongForm: sr1wf, teacherForm: sr1tf },
+                    { label: 'PMAP1', count: pmap1, deadline: deadlines.pmap1, wrongForm: pmap1wf, teacherForm: pmap1tf }
                 ];
 
-                // Only add SR2/PMAP2 if this user type has them
                 if (deadlines.hasSecondRound) {
                     pmapItems.push(
-                        { label: 'SR2', complete: isComplete(staff.self_reflection_2_count), deadline: deadlines.sr2 },
-                        { label: 'PMAP2', complete: isComplete(staff.pmap_2_count), deadline: deadlines.pmap2 }
+                        { label: 'SR2', count: staff.self_reflection_2_count, deadline: deadlines.sr2, wrongForm: staff.sr2_wrong_form, teacherForm: false },
+                        { label: 'PMAP2', count: staff.pmap_2_count, deadline: deadlines.pmap2, wrongForm: staff.pmap2_wrong_form, teacherForm: false }
                     );
                 }
             }
 
             pmapItems.forEach(item => {
-                const hiredAfter = !item.complete && wasHiredAfterDeadline(hireDate, item.deadline);
-                const overdue = !item.complete && !hiredAfter && isOverdue(item.deadline);
-                const dueSoon = !item.complete && !hiredAfter && !overdue && isWithinTwoWeeks(item.deadline);
+                const complete = isComplete(item.count);
+                const effDeadline = getEffectiveDeadline(hireDate, item.deadline);
+                const lateHire = isLateHire(hireDate, item.deadline);
+                const overdue = !complete && !isLoaDetail && isOverdue(effDeadline);
+                const dueSoon = !complete && !isLoaDetail && !overdue && isWithinTwoWeeks(effDeadline);
                 let chipClass, icon, statusText;
 
-                if (item.complete) {
+                if (complete && item.wrongForm) {
+                    const wfNote = item.teacherForm ? 'Teacher form used' : item.label.startsWith('SR') ? 'Submitted on PMAP form' : 'Submitted on SR form';
+                    chipClass = 'bg-emerald-50 text-emerald-700 border-emerald-200 ring-2 ring-red-400';
+                    icon = checkIcon;
+                    statusText = wfNote;
+                } else if (complete) {
                     chipClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-                    icon = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                    icon = checkIcon;
                     statusText = 'Complete';
-                } else if (hiredAfter) {
-                    // Hired after deadline - N/A
+                } else if (isLoaDetail) {
+                    chipClass = 'bg-amber-50 text-amber-600 border-amber-200';
+                    icon = dashIcon;
+                    statusText = 'On LOA';
+                } else if (!effDeadline) {
                     chipClass = 'bg-slate-50 text-slate-300 border-slate-200';
-                    icon = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>';
-                    statusText = 'N/A';
+                    icon = dashIcon;
+                    statusText = 'N/A (hired after deadline)';
                 } else if (overdue) {
-                    chipClass = 'bg-red-100 text-red-700 border-red-300 ring-1 ring-red-300';
-                    icon = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>';
-                    statusText = `OVERDUE`;
+                    chipClass = 'bg-red-100 text-red-700 border-red-300';
+                    icon = xIcon;
+                    statusText = lateHire ? `OVERDUE (New Hire — due ${formatDeadline(effDeadline)})` : `OVERDUE (due ${formatDeadline(effDeadline)})`;
                 } else if (dueSoon) {
                     chipClass = 'bg-amber-50 text-amber-700 border-amber-200';
-                    icon = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
-                    statusText = `Due ${formatDeadline(item.deadline)}`;
+                    icon = clockIcon;
+                    statusText = lateHire ? `New Hire — due ${formatDeadline(effDeadline)}` : `Due ${formatDeadline(effDeadline)}`;
                 } else {
-                    // Not complete but not due soon - neutral gray
                     chipClass = 'bg-slate-50 text-slate-500 border-slate-200';
-                    icon = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
-                    statusText = `Due ${formatDeadline(item.deadline)}`;
+                    icon = clockIcon;
+                    statusText = lateHire ? `New Hire — due ${formatDeadline(effDeadline)}` : `Due ${formatDeadline(effDeadline)}`;
                 }
 
                 const chip = document.createElement('div');
@@ -2811,6 +2913,296 @@
             } catch {
                 return 'N/A';
             }
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        // PMAP Tracker Network View
+        // ─────────────────────────────────────────────────────────────
+
+        let pmapNetworkData = null;
+        const SCHOOL_SHORT = {
+            'Arthur Ashe Charter School': 'Ashe',
+            'Langston Hughes Academy': 'LHA',
+            'Phillis Wheatley Community School': 'Wheatley',
+            'Samuel J Green Charter School': 'Green',
+            'FirstLine Network': 'Network'
+        };
+        const SCHOOL_ORDER = ['Arthur Ashe Charter School','Langston Hughes Academy',
+            'Phillis Wheatley Community School','Samuel J Green Charter School','FirstLine Network'];
+
+        function switchHrView(view) {
+            const staffView = document.getElementById('staffView');
+            const pmapView = document.getElementById('pmapTrackerView');
+            const staffBtn = document.getElementById('staffViewBtn');
+            const pmapBtn = document.getElementById('pmapViewBtn');
+
+            if (view === 'pmap') {
+                staffView.classList.add('hidden');
+                pmapView.classList.remove('hidden');
+                staffBtn.className = 'px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors';
+                pmapBtn.className = 'px-4 py-2 text-sm font-semibold rounded-lg bg-fls-navy text-white transition-colors';
+                if (!pmapNetworkData) loadPmapNetwork();
+            } else {
+                staffView.classList.remove('hidden');
+                pmapView.classList.add('hidden');
+                pmapBtn.className = 'px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors';
+                staffBtn.className = 'px-4 py-2 text-sm font-semibold rounded-lg bg-fls-navy text-white transition-colors';
+            }
+        }
+
+        async function loadPmapNetwork() {
+            try {
+                const resp = await apiFetch('/api/pmap-network');
+                if (!resp.ok) throw new Error('Failed to load');
+                pmapNetworkData = await resp.json();
+                renderPmapSchoolCards();
+            } catch (e) {
+                document.getElementById('pmapDrillDown').innerHTML =
+                    `<div class="text-red-500 text-sm p-4">Error loading PMAP data: ${e.message}</div>`;
+            }
+        }
+
+        function pmapStaffStatus(s) {
+            // Returns {sr_done, pmap_done, is_loa, is_hourly, is_eligible, wrong_form}
+            const isHourly = s.Salary_or_Hourly === 'Hourly';
+            const isLoa = (s.Employment_Status || '').toLowerCase() === 'leave of absence';
+            const jf = s.Job_Function || '';
+            const deadlines = getDeadlines(jf);
+            const hasR2 = deadlines.hasSecondRound;
+
+            let sr1 = s.sr1, pmap1 = s.pmap1;
+            // Support round collapsing
+            if (!hasR2) {
+                if (!isComplete(sr1) && isComplete(s.sr2)) sr1 = s.sr2;
+                if (!isComplete(pmap1) && isComplete(s.pmap2)) pmap1 = s.pmap2;
+            }
+
+            const sr_done = hasR2 ? (isComplete(sr1) && isComplete(s.sr2)) : isComplete(sr1);
+            const pmap_done = hasR2 ? (isComplete(pmap1) && isComplete(s.pmap2)) : isComplete(pmap1);
+            const all_done = sr_done && pmap_done;
+
+            // Check if any items are overdue (using effective deadlines)
+            let any_overdue = false;
+            if (!isLoa && !isHourly) {
+                const hd = s.Last_Hire_Date;
+                if (!isComplete(sr1) && isOverdue(getEffectiveDeadline(hd, deadlines.sr1))) any_overdue = true;
+                if (!isComplete(pmap1) && isOverdue(getEffectiveDeadline(hd, deadlines.pmap1))) any_overdue = true;
+                if (hasR2) {
+                    if (!isComplete(s.sr2) && isOverdue(getEffectiveDeadline(hd, deadlines.sr2))) any_overdue = true;
+                    if (!isComplete(s.pmap2) && isOverdue(getEffectiveDeadline(hd, deadlines.pmap2))) any_overdue = true;
+                }
+            }
+
+            const isSupport = !hasR2;
+            const wrongForm = s.sr1_wrong_form || s.sr2_wrong_form || s.pmap1_wrong_form || s.pmap2_wrong_form
+                || (isSupport && (s.teacher_form_sr1 || s.teacher_form_sr2 || s.teacher_form_pmap1 || s.teacher_form_pmap2));
+
+            return { sr_done, pmap_done, all_done, is_loa: isLoa, is_hourly: isHourly,
+                     is_eligible: !isLoa && !isHourly, wrong_form: wrongForm, any_overdue, hasR2 };
+        }
+
+        function calcSrPmapTotals(staffList) {
+            let srDone = 0, srTotal = 0, pmapDone = 0, pmapTotal = 0;
+            staffList.forEach(s => {
+                const st = pmapStaffStatus(s);
+                if (!st.is_eligible) return;
+                srTotal++;
+                pmapTotal++;
+                if (st.sr_done) srDone++;
+                if (st.pmap_done) pmapDone++;
+            });
+            return { srDone, srTotal, pmapDone, pmapTotal };
+        }
+
+        function pctColor(n, d) {
+            const v = d ? Math.round(n / d * 100) : 0;
+            return v >= 80 ? '#22c55e' : v >= 50 ? '#f59e0b' : '#ef4444';
+        }
+
+        function renderPmapSchoolCards() {
+            const container = document.getElementById('pmapSchoolCards');
+            container.innerHTML = '';
+
+            const bySchool = {};
+            pmapNetworkData.forEach(s => {
+                const sch = s.school || 'Unknown';
+                if (!bySchool[sch]) bySchool[sch] = [];
+                bySchool[sch].push(s);
+            });
+
+            // Network total card
+            const net = calcSrPmapTotals(pmapNetworkData);
+            const netSrPct = net.srTotal ? Math.round(net.srDone / net.srTotal * 100) : 0;
+            const netPmapPct = net.pmapTotal ? Math.round(net.pmapDone / net.pmapTotal * 100) : 0;
+
+            container.innerHTML += `
+                <div class="bg-fls-navy rounded-xl border-2 border-fls-orange p-4 text-white cursor-pointer hover:opacity-90 col-span-2 lg:col-span-4"
+                     onclick="renderPmapAllSchools()">
+                    <div class="text-xs font-semibold uppercase tracking-wide opacity-70 mb-2">Network Total</div>
+                    <div class="flex gap-8">
+                        <div>
+                            <div class="text-xs opacity-70">SR</div>
+                            <div class="text-xl font-bold">${netSrPct}% <span class="text-sm font-normal opacity-70">(${net.srDone}/${net.srTotal})</span></div>
+                        </div>
+                        <div>
+                            <div class="text-xs opacity-70">PMAP</div>
+                            <div class="text-xl font-bold">${netPmapPct}% <span class="text-sm font-normal opacity-70">(${net.pmapDone}/${net.pmapTotal})</span></div>
+                        </div>
+                    </div>
+                </div>`;
+
+            const ordered = SCHOOL_ORDER.filter(s => bySchool[s]).concat(
+                Object.keys(bySchool).filter(s => !SCHOOL_ORDER.includes(s)).sort()
+            );
+
+            ordered.forEach(school => {
+                const staff = bySchool[school];
+                const t = calcSrPmapTotals(staff);
+                const srPct = t.srTotal ? Math.round(t.srDone / t.srTotal * 100) : 0;
+                const pmapPct = t.pmapTotal ? Math.round(t.pmapDone / t.pmapTotal * 100) : 0;
+                const loa = staff.filter(s => pmapStaffStatus(s).is_loa).length;
+                const overdue = staff.filter(s => { const st = pmapStaffStatus(s); return st.is_eligible && st.any_overdue; }).length;
+                const sname = SCHOOL_SHORT[school] || school;
+
+                container.innerHTML += `
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 cursor-pointer hover:shadow-md transition-shadow"
+                         onclick="renderPmapSchoolDrill('${school.replace(/'/g, "\\'")}')">
+                        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">${sname}</div>
+                        <div class="mb-1">
+                            <div class="flex items-baseline gap-1">
+                                <span class="text-xs text-slate-500 w-12">SR:</span>
+                                <span class="text-sm font-bold" style="color:${pctColor(t.srDone, t.srTotal)}">${srPct}%</span>
+                                <span class="text-xs text-slate-400">(${t.srDone}/${t.srTotal})</span>
+                            </div>
+                            <div class="flex items-baseline gap-1">
+                                <span class="text-xs text-slate-500 w-12">PMAP:</span>
+                                <span class="text-sm font-bold" style="color:${pctColor(t.pmapDone, t.pmapTotal)}">${pmapPct}%</span>
+                                <span class="text-xs text-slate-400">(${t.pmapDone}/${t.pmapTotal})</span>
+                            </div>
+                        </div>
+                        ${loa ? `<div class="text-xs text-amber-600">${loa} on LOA</div>` : ''}
+                        ${overdue ? `<div class="text-xs text-red-500">${overdue} overdue</div>` : ''}
+                    </div>`;
+            });
+        }
+
+        function renderPmapAllSchools() {
+            const container = document.getElementById('pmapDrillDown');
+            const bySchool = {};
+            pmapNetworkData.forEach(s => {
+                const sch = s.school || 'Unknown';
+                if (!bySchool[sch]) bySchool[sch] = [];
+                bySchool[sch].push(s);
+            });
+            const ordered = SCHOOL_ORDER.filter(s => bySchool[s]).concat(
+                Object.keys(bySchool).filter(s => !SCHOOL_ORDER.includes(s)).sort()
+            );
+
+            let html = '<div class="space-y-6">';
+            ordered.forEach(school => {
+                html += renderSchoolSection(school, bySchool[school]);
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function renderPmapSchoolDrill(school) {
+            const staff = pmapNetworkData.filter(s => s.school === school);
+            const container = document.getElementById('pmapDrillDown');
+            container.innerHTML = renderSchoolSection(school, staff);
+        }
+
+        function renderSchoolSection(school, staff) {
+            const sname = SCHOOL_SHORT[school] || school;
+            const bySup = {};
+            staff.forEach(s => {
+                const sup = s.supervisor || 'No Supervisor';
+                if (!bySup[sup]) bySup[sup] = [];
+                bySup[sup].push(s);
+            });
+
+            let html = `<div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div class="bg-fls-navy text-white px-4 py-3 font-bold text-sm">${sname}</div>`;
+
+            Object.keys(bySup).sort().forEach(sup => {
+                const members = bySup[sup];
+                const eligible = members.filter(s => pmapStaffStatus(s).is_eligible);
+                const done = eligible.filter(s => pmapStaffStatus(s).all_done).length;
+                const pct = eligible.length ? Math.round(done / eligible.length * 100) : 0;
+                const color = pct >= 100 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444';
+                const loaCount = members.filter(s => pmapStaffStatus(s).is_loa).length;
+                const countLabel = eligible.length + (loaCount ? ` + ${loaCount} LOA` : '');
+
+                html += `<div class="border-b border-slate-100">
+                    <div class="px-4 py-2 bg-slate-50 flex items-center justify-between cursor-pointer hover:bg-slate-100"
+                         onclick="this.nextElementSibling.classList.toggle('hidden')">
+                        <div>
+                            <span class="font-semibold text-sm text-slate-700">${sup}</span>
+                            <span class="text-xs text-slate-400 ml-2">(${countLabel})</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs font-bold" style="color:${color}">${done}/${eligible.length} (${pct}%)</span>
+                            <div class="w-20 bg-slate-200 rounded-full h-1.5">
+                                <div class="h-1.5 rounded-full" style="width:${pct}%;background:${color}"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hidden">
+                        <table class="w-full text-xs">
+                            <thead><tr class="bg-slate-50 text-slate-500">
+                                <th class="text-left px-4 py-1 font-semibold">Name</th>
+                                <th class="text-left px-2 py-1 font-semibold">Function</th>
+                                <th class="text-center px-2 py-1 font-semibold">Status</th>
+                            </tr></thead>
+                            <tbody>`;
+
+                members.forEach(s => {
+                    const st = pmapStaffStatus(s);
+                    // Reuse getPmapIconsForStaff by mapping pmap-network fields to expected names
+                    let statusHtml = '';
+                    if (st.is_hourly) {
+                        statusHtml = '<span class="text-slate-300">—</span>';
+                    } else {
+                        const mapped = {
+                            Salary_or_Hourly: s.Salary_or_Hourly,
+                            Employment_Status: s.Employment_Status,
+                            Job_Function: s.Job_Function,
+                            Last_Hire_Date: s.Last_Hire_Date,
+                            self_reflection_1_count: s.sr1,
+                            self_reflection_2_count: s.sr2,
+                            pmap_1_count: s.pmap1,
+                            pmap_2_count: s.pmap2,
+                            sr1_wrong_form: s.sr1_wrong_form,
+                            sr2_wrong_form: s.sr2_wrong_form,
+                            pmap1_wrong_form: s.pmap1_wrong_form,
+                            pmap2_wrong_form: s.pmap2_wrong_form,
+                            teacher_rubric_count: s.teacher_rubric_count,
+                            teacher_form_sr1: s.teacher_form_sr1,
+                            teacher_form_sr2: s.teacher_form_sr2,
+                            teacher_form_pmap1: s.teacher_form_pmap1,
+                            teacher_form_pmap2: s.teacher_form_pmap2
+                        };
+                        statusHtml = getPmapIconsForStaff(mapped);
+                    }
+
+                    const lateHireAny = !st.is_loa && !st.is_hourly && s.Last_Hire_Date &&
+                        isLateHire(s.Last_Hire_Date, getDeadlines(s.Job_Function || '').sr1);
+                    const nameExtra = lateHireAny
+                        ? ' <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">New</span>'
+                        : '';
+
+                    html += `<tr class="border-t border-slate-50 hover:bg-slate-50">
+                        <td class="px-4 py-1.5">${s.staff_name}${nameExtra}</td>
+                        <td class="px-2 py-1.5 text-slate-500">${s.Job_Function || ''}</td>
+                        <td class="px-2 py-1.5 text-center"><div class="flex items-center justify-center gap-0.5">${statusHtml}</div></td>
+                    </tr>`;
+                });
+
+                html += `</tbody></table></div></div>`;
+            });
+
+            html += '</div>';
+            return html;
         }
     </script>
 </body>
