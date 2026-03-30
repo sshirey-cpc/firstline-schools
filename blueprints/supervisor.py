@@ -299,7 +299,13 @@ def get_team_staff():
                 sab.application_id as sabbatical_app_id,
                 sab.status as sabbatical_status,
                 sab.start_date as sabbatical_start,
-                sab.end_date as sabbatical_end
+                sab.end_date as sabbatical_end,
+                ol.doc_state as offer_letter_doc_state,
+                ol.sent_at as offer_letter_sent_at,
+                ol.doc_name as offer_letter_doc_name,
+                ol.employee_status as offer_letter_employee_status,
+                ol.counter_signer_name as offer_letter_counter_signer,
+                ol.counter_signer_status as offer_letter_counter_status
             FROM `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID}` s
             LEFT JOIN accrual_pivoted a ON s.Employee_Number = a.Person_Number
             LEFT JOIN `{PROJECT_ID}.{DATASET_ID}.staff_master_list_with_function` sml
@@ -310,6 +316,39 @@ def get_team_staff():
                 ON s.Employee_Number = CAST(lpo.teacher_internal_id AS INT64)
             LEFT JOIN sabbatical_apps sab
                 ON LOWER(s.Email_Address) = sab.employee_email
+            LEFT JOIN (
+                WITH offer_docs AS (
+                    SELECT d2.id as doc_id, d2.name as doc_name, d2.state, d2.sent_at,
+                           ROW_NUMBER() OVER (PARTITION BY d2.id ORDER BY d2.sent_at DESC) as doc_rn
+                    FROM `{PROJECT_ID}.rightsignature.documents` d2
+                    WHERE d2.name LIKE "26-27%SY Offer Letter%"
+                ),
+                offer_signers AS (
+                    SELECT od.doc_id, od.doc_name, od.state, od.sent_at,
+                           s2.signer_email, s2.signer_name, s2.role_name, s2.status as signer_status
+                    FROM offer_docs od
+                    JOIN `{PROJECT_ID}.rightsignature.signers` s2 ON od.doc_id = s2.document_id
+                    WHERE od.doc_rn = 1
+                ),
+                employee_offers AS (
+                    SELECT
+                        emp.signer_email,
+                        emp.doc_name,
+                        emp.state as doc_state,
+                        emp.sent_at,
+                        emp.signer_status as employee_status,
+                        counter.signer_name as counter_signer_name,
+                        counter.signer_status as counter_signer_status,
+                        ROW_NUMBER() OVER (PARTITION BY LOWER(TRIM(emp.signer_email)) ORDER BY emp.sent_at DESC) as rn
+                    FROM offer_signers emp
+                    LEFT JOIN offer_signers counter
+                        ON emp.doc_id = counter.doc_id AND counter.role_name = 'signer2'
+                    WHERE emp.role_name = 'signer1'
+                )
+                SELECT signer_email, doc_name, doc_state, sent_at,
+                       employee_status, counter_signer_name, counter_signer_status
+                FROM employee_offers WHERE rn = 1
+            ) ol ON LOWER(s.Email_Address) = LOWER(ol.signer_email)
             WHERE s.Supervisor_Name__Unsecured_ IN UNNEST(@supervisors)
                OR LOWER(s.Email_Address) = LOWER(@user_email)
             ORDER BY s.last_name, s.first_name
@@ -601,7 +640,13 @@ def get_staff(supervisor_name):
                 sab.application_id as sabbatical_app_id,
                 sab.status as sabbatical_status,
                 sab.start_date as sabbatical_start,
-                sab.end_date as sabbatical_end
+                sab.end_date as sabbatical_end,
+                ol.doc_state as offer_letter_doc_state,
+                ol.sent_at as offer_letter_sent_at,
+                ol.doc_name as offer_letter_doc_name,
+                ol.employee_status as offer_letter_employee_status,
+                ol.counter_signer_name as offer_letter_counter_signer,
+                ol.counter_signer_status as offer_letter_counter_status
             FROM `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID}` s
             LEFT JOIN accrual_pivoted a ON s.Employee_Number = a.Person_Number
             LEFT JOIN `{PROJECT_ID}.{DATASET_ID}.staff_master_list_with_function` sml
@@ -612,6 +657,39 @@ def get_staff(supervisor_name):
                 ON s.Employee_Number = CAST(lpo.teacher_internal_id AS INT64)
             LEFT JOIN sabbatical_apps sab
                 ON LOWER(s.Email_Address) = sab.employee_email
+            LEFT JOIN (
+                WITH offer_docs AS (
+                    SELECT d2.id as doc_id, d2.name as doc_name, d2.state, d2.sent_at,
+                           ROW_NUMBER() OVER (PARTITION BY d2.id ORDER BY d2.sent_at DESC) as doc_rn
+                    FROM `{PROJECT_ID}.rightsignature.documents` d2
+                    WHERE d2.name LIKE "26-27%SY Offer Letter%"
+                ),
+                offer_signers AS (
+                    SELECT od.doc_id, od.doc_name, od.state, od.sent_at,
+                           s2.signer_email, s2.signer_name, s2.role_name, s2.status as signer_status
+                    FROM offer_docs od
+                    JOIN `{PROJECT_ID}.rightsignature.signers` s2 ON od.doc_id = s2.document_id
+                    WHERE od.doc_rn = 1
+                ),
+                employee_offers AS (
+                    SELECT
+                        emp.signer_email,
+                        emp.doc_name,
+                        emp.state as doc_state,
+                        emp.sent_at,
+                        emp.signer_status as employee_status,
+                        counter.signer_name as counter_signer_name,
+                        counter.signer_status as counter_signer_status,
+                        ROW_NUMBER() OVER (PARTITION BY LOWER(TRIM(emp.signer_email)) ORDER BY emp.sent_at DESC) as rn
+                    FROM offer_signers emp
+                    LEFT JOIN offer_signers counter
+                        ON emp.doc_id = counter.doc_id AND counter.role_name = 'signer2'
+                    WHERE emp.role_name = 'signer1'
+                )
+                SELECT signer_email, doc_name, doc_state, sent_at,
+                       employee_status, counter_signer_name, counter_signer_status
+                FROM employee_offers WHERE rn = 1
+            ) ol ON LOWER(s.Email_Address) = LOWER(ol.signer_email)
             WHERE s.Supervisor_Name__Unsecured_ = @supervisor
             ORDER BY s.last_name, s.first_name
         """

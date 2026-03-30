@@ -18,6 +18,7 @@ This guide is for developers and administrators who need to maintain, update, or
 8. [Database Schema](#8-database-schema)
 9. [Troubleshooting](#9-troubleshooting)
 10. [Using Claude Code](#10-using-claude-code)
+11. [BigQuery Infrastructure](#11-bigquery-infrastructure)
 
 ---
 
@@ -785,6 +786,107 @@ This application is designed to be easily migrated to a different GCP project. A
 |------|----------------|
 | config.py | `PROJECT_ID` variable |
 | (Optional) Update OAuth credentials in Secret Manager |
+
+---
+
+## 11. BigQuery Infrastructure
+
+### Critical: Dataset Expiration Settings
+
+BigQuery datasets have a **Default Table Expiration** setting that silently auto-deletes every table and view after a set period. This caused a major outage on March 19, 2026 when 21 tables/views were silently deleted across 5 datasets that had 60-day expirations set.
+
+**Auto-expiration is dangerous because:**
+- Tables/views are permanently deleted with **no warning**
+- No audit log entry in the normal `activity` stream (only in `system_event` logs under `InternalTableExpired`)
+- No recycle bin — recovery requires Google Cloud Support within 14 days
+- Even **views** (which are just SQL definitions) get deleted
+
+**Rule: All datasets must have Default Table Expiration set to NEVER.** This was fixed on March 19, 2026. To verify:
+
+```python
+from google.cloud import bigquery
+client = bigquery.Client(project='talent-demo-482004')
+for ds in client.list_datasets():
+    full = client.get_dataset(ds.reference)
+    exp = full.default_table_expiration_ms
+    if exp:
+        print(f'WARNING: {ds.dataset_id} has {exp/1000/60/60/24:.0f}-day expiration!')
+    else:
+        print(f'OK: {ds.dataset_id}')
+```
+
+To check individual table/view expirations:
+```python
+table = client.get_table('talent-demo-482004.talent_grow_observations.supervisor_dashboard_data')
+print(f'Expires: {table.expires}')  # Should be None
+```
+
+### Data Pipeline
+
+```
+Grow API → Google Sheet → External Table (observations_raw) → Scheduled Query → Native Table (observations_raw_native) → Views → Dashboard
+```
+
+| Layer | Example | Refresh |
+|-------|---------|---------|
+| External Table | `observations_raw`, `staff_master_list` | Live (reads sheet on query) |
+| Scheduled Query | "Grow Observations" | Daily 07:00 + 14:00 UTC |
+| Native Table | `observations_raw_native`, `staff_master_list_native` | Written by scheduled query |
+| View | `staff_master_list_with_function`, `supervisor_dashboard_data` | Real-time (computed on query) |
+
+### Scheduled Queries
+
+| Name | Schedule | Source → Destination |
+|------|----------|---------------------|
+| Grow Observations | Daily 07:00 UTC | `observations_raw` → `observations_raw_native` |
+| Grow Observations - Midday Sync | Daily 14:00 UTC | `observations_raw` → `observations_raw_native` |
+| Staff Master List | Daily 06:00 UTC | `staff_master_list` → `staff_master_list_native` |
+| Goals | Daily 06:00 UTC | `goals` → `goals_native` |
+| Staff Daily Roster Snapshot | Daily 06:30 UTC | INSERT from `staff_master_list_with_function` |
+| Position Occupancy - Track Changes | Daily 06:45 UTC | UPDATE/INSERT on `position_occupancy` |
+
+### Critical Views
+
+**`staff_master_list_with_function`** — the most important view. Adds `Job_Function` classification (Teacher, Leadership, Network, Support, Operations, Other) to the UKG staff master list. This is the ONLY field not from the UKG API — it uses Job_Title-level rules defined by Scott.
+
+- **SQL source of truth:** `~/firstline-projects/grow-observations/staff_master_list_with_function.sql`
+- **Never recreate without Scott's explicit mapping**
+- Feeds: supervisor dashboard PMAP icons, retention data, staffing board, schools dashboard, auth/access control, staff daily roster
+
+**View dependency chain:**
+```
+staff_master_list_native
+  → staff_master_list_with_function (adds Job_Function)
+    → staff_with_observations_by_type (adds observation counts)
+    → supervisor_dashboard_data (main dashboard view)
+    → staff_daily_roster (daily snapshot)
+    → accrual_with_staff_info (PTO/vacation with staff details)
+    → intent_to_return_with_staff (ITR with staff details)
+```
+
+### View SQL Backups
+
+All view definitions are saved as SQL files in `~/firstline-projects/grow-observations/`:
+
+| File | View |
+|------|------|
+| `staff_master_list_with_function.sql` | Job_Function classification |
+| `supervisor_dashboard_data.sql` | Main supervisor dashboard view |
+| `staff_with_observations_by_type.sql` | Observation counts by type |
+| `observations_summary.sql` | Aggregated observations |
+| `accrual_with_staff_info.sql` | Accrual balances with staff info |
+| `intent_to_return_with_staff.sql` | ITR responses with staff info |
+
+If a view needs to be recreated, use these files — never guess at the SQL.
+
+### Incident Log
+
+**March 19, 2026 — Silent Table Expiration**
+- 21 tables/views auto-deleted across 5 datasets due to 60-day default expiration
+- `staff_master_list_with_function` was recreated with incorrect Job_Function mapping (guessed from UKG Function codes instead of Job_Title rules), breaking PMAP display for multiple roles
+- Root cause: `defaultTableExpirationMs: 5184000000` set on datasets at creation time
+- Fix: Removed default expiration from all datasets, cleared expiration on all 32 existing tables/views
+- Lesson: Always verify dataset settings. Auto-expiration events are only visible in `system_event` logs (`InternalTableExpired`), not normal `activity` logs
 
 ---
 

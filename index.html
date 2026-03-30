@@ -366,7 +366,7 @@
                                 <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">Last Obs</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap min-w-[90px]">Action Step</th>
                                 <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">PMAPS</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">Intent to Return</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">Offer</th>
                             </tr>
                         </thead>
                         <tbody id="staffTableBody" class="divide-y divide-slate-100">
@@ -1477,7 +1477,7 @@
                         </div>
                     </td>
                     <td class="px-4 py-4 whitespace-nowrap">
-                        <button onclick="event.stopPropagation(); showITRDetail('${staff.Email_Address}')" class="text-sm ${getIntentColor(staff.intent_to_return)} hover:underline cursor-pointer">${getIntentStatus(staff.intent_to_return)}</button>
+                        <span class="text-sm ${getOfferLetterInfo(staff).color}" title="${getOfferLetterInfo(staff).tooltip}">${getOfferLetterInfo(staff).text}</span>
                     </td>
                 `;
                 tableBody.appendChild(row);
@@ -1511,9 +1511,9 @@
                             <div class="text-lg font-semibold text-slate-900">${staff.total_observations || 0}</div>
                             <div class="text-xs text-slate-500">Total Obs</div>
                         </div>
-                        <div onclick="event.stopPropagation(); showITRDetail('${staff.Email_Address}')" class="cursor-pointer">
-                            <div class="text-lg font-semibold ${getIntentColor(staff.intent_to_return)}">${getIntentStatus(staff.intent_to_return)}</div>
-                            <div class="text-xs text-slate-500">Intent</div>
+                        <div>
+                            <div class="text-lg font-semibold ${getOfferLetterInfo(staff).color}">${getOfferLetterInfo(staff).text}</div>
+                            <div class="text-xs text-slate-500">Offer Letter</div>
                         </div>
                     </div>
                     <div class="flex items-center justify-between pt-3 border-t border-slate-100">
@@ -1963,6 +1963,37 @@
             if (str === 'no') return 'text-red-600 font-medium';
             if (str === 'unsure') return 'text-amber-600 font-medium';
             return 'text-slate-500';
+        }
+
+        function getOfferLetterInfo(staff) {
+            const docState = (staff.offer_letter_doc_state || '').toLowerCase();
+            const empStatus = (staff.offer_letter_employee_status || '').toLowerCase();
+            const counterStatus = (staff.offer_letter_counter_status || '').toLowerCase();
+            const counterName = staff.offer_letter_counter_signer || 'Counter-signer';
+            const sent = staff.offer_letter_sent_at ? new Date(staff.offer_letter_sent_at).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) : '';
+
+            if (!docState) return { text: '—', color: 'text-slate-400', tooltip: 'No 26-27 offer letter sent' };
+
+            if (docState === 'executed') {
+                return { text: 'Signed', color: 'text-emerald-600 font-medium', tooltip: `${staff.offer_letter_doc_name} — Sent ${sent}` };
+            }
+            if (empStatus === 'signed' && counterStatus === 'pending') {
+                return { text: 'Awaiting Counter-Sig', color: 'text-amber-600 font-medium',
+                    tooltip: `Employee signed — ${counterName}: Pending. Sent ${sent}` };
+            }
+            if (empStatus === 'signed' && docState === 'expired') {
+                return { text: 'Expired (Counter-Sig)', color: 'text-red-600 font-medium',
+                    tooltip: `Employee signed but ${counterName} did not counter-sign before expiration. Sent ${sent}` };
+            }
+            if (empStatus === 'pending' && docState === 'expired') {
+                return { text: 'Expired', color: 'text-red-600 font-medium',
+                    tooltip: `Employee did not sign before expiration. Sent ${sent}` };
+            }
+            if (empStatus === 'pending') {
+                return { text: 'Pending', color: 'text-amber-600 font-medium',
+                    tooltip: `Awaiting employee signature. Sent ${sent}` };
+            }
+            return { text: docState, color: 'text-slate-500', tooltip: `Sent ${sent}` };
         }
 
         // Render detail view modal

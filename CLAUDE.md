@@ -2,9 +2,8 @@
 
 ## Mandatory First Actions
 1. Read `.claude/LAST_SESSION.md` (auto-generated session state)
-2. Read `CLAUDE_CONTEXT.md` (project context and recent sessions)
-3. Read `NEXT_STEPS.md` (completed work and backlog)
-4. Greet Scott with a brief summary of where things left off
+2. Read `~/firstline-projects/.context/bigquery-dashboards/context.md` (session history)
+3. Greet Scott with a brief summary of where things left off
 
 ## Tech Stack
 - **Backend:** Flask + gunicorn, deployed on Google Cloud Run
@@ -144,11 +143,11 @@ Job title **contains** "Chief" or "Ex. Dir" (case-insensitive). Checked in `auth
 | `docs/ACCESS_PERMISSIONS.md` | Full permissions reference (all projects) |
 | `CLAUDE_CONTEXT.md` | Project history and session log |
 | `NEXT_STEPS.md` | Completed work and backlog |
-| `~/deploy.sh` | Deployment script (not in this repo) |
+| `~/firstline-projects/deploy.sh` | Deployment script (not in this repo) |
 
 ## Deployment
-- Deploy dashboards app: `~/deploy.sh dashboards`
-- Deploy supervisor app: `~/deploy.sh supervisor`
+- Deploy dashboards app: `~/firstline-projects/deploy.sh dashboards`
+- Deploy supervisor app: `~/firstline-projects/deploy.sh supervisor`
 - Never use `gcloud run deploy` directly — the deploy script handles env vars and Windows `\r` stripping
 
 ## Rules

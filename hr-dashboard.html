@@ -341,12 +341,19 @@
             <div class="flex gap-2 mb-4">
                 <button id="staffViewBtn" onclick="switchHrView('staff')" class="px-4 py-2 text-sm font-semibold rounded-lg bg-fls-navy text-white transition-colors">Staff View</button>
                 <button id="pmapViewBtn" onclick="switchHrView('pmap')" class="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">PMAP Tracker</button>
+                <button id="offerViewBtn" onclick="switchHrView('offer')" class="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">Offer Tracker</button>
             </div>
 
             <!-- PMAP Tracker View -->
             <div id="pmapTrackerView" class="hidden">
                 <div id="pmapSchoolCards" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6"></div>
                 <div id="pmapDrillDown"></div>
+            </div>
+
+            <!-- Offer Tracker View -->
+            <div id="offerTrackerView" class="hidden">
+                <div id="offerSchoolCards" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6"></div>
+                <div id="offerDrillDown"></div>
             </div>
 
             <!-- Staff View (existing) -->
@@ -480,7 +487,7 @@
                                 <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">Last Obs</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap min-w-[90px]">Action Step</th>
                                 <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">PMAPS</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">ITR</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">Offer</th>
                             </tr>
                         </thead>
                         <tbody id="staffTableBody" class="divide-y divide-slate-100">
@@ -1747,7 +1754,7 @@
                         </div>
                     </td>
                     <td class="px-4 py-4 whitespace-nowrap">
-                        <button onclick="event.stopPropagation(); showITRDetail('${staff.Email_Address}')" class="text-sm ${getIntentColor(staff.intent_to_return)} hover:underline cursor-pointer">${getIntentStatus(staff.intent_to_return)}</button>
+                        <span class="text-sm ${getOfferLetterInfo(staff).color}" title="${getOfferLetterInfo(staff).tooltip}">${getOfferLetterInfo(staff).text}</span>
                     </td>
                 `;
                 tableBody.appendChild(row);
@@ -1781,9 +1788,9 @@
                             <div class="text-lg font-semibold text-slate-900">${staff.total_observations || 0}</div>
                             <div class="text-xs text-slate-500">Total Obs</div>
                         </div>
-                        <div onclick="event.stopPropagation(); showITRDetail('${staff.Email_Address}')" class="cursor-pointer">
-                            <div class="text-lg font-semibold ${getIntentColor(staff.intent_to_return)}">${getIntentStatus(staff.intent_to_return)}</div>
-                            <div class="text-xs text-slate-500">Intent</div>
+                        <div>
+                            <div class="text-lg font-semibold ${getOfferLetterInfo(staff).color}">${getOfferLetterInfo(staff).text}</div>
+                            <div class="text-xs text-slate-500">Offer Letter</div>
                         </div>
                     </div>
                     <div class="flex items-center justify-between pt-3 border-t border-slate-100">
@@ -2232,6 +2239,37 @@
             if (str === 'no') return 'text-red-600 font-medium';
             if (str === 'unsure') return 'text-amber-600 font-medium';
             return 'text-slate-500';
+        }
+
+        function getOfferLetterInfo(staff) {
+            const docState = (staff.offer_letter_doc_state || '').toLowerCase();
+            const empStatus = (staff.offer_letter_employee_status || '').toLowerCase();
+            const counterStatus = (staff.offer_letter_counter_status || '').toLowerCase();
+            const counterName = staff.offer_letter_counter_signer || 'Counter-signer';
+            const sent = staff.offer_letter_sent_at ? new Date(staff.offer_letter_sent_at).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) : '';
+
+            if (!docState) return { text: '—', color: 'text-slate-400', tooltip: 'No 26-27 offer letter sent' };
+
+            if (docState === 'executed') {
+                return { text: 'Signed', color: 'text-emerald-600 font-medium', tooltip: `${staff.offer_letter_doc_name} — Sent ${sent}` };
+            }
+            if (empStatus === 'signed' && counterStatus === 'pending') {
+                return { text: 'Awaiting Counter-Sig', color: 'text-amber-600 font-medium',
+                    tooltip: `Employee signed — ${counterName}: Pending. Sent ${sent}` };
+            }
+            if (empStatus === 'signed' && docState === 'expired') {
+                return { text: 'Expired (Counter-Sig)', color: 'text-red-600 font-medium',
+                    tooltip: `Employee signed but ${counterName} did not counter-sign before expiration. Sent ${sent}` };
+            }
+            if (empStatus === 'pending' && docState === 'expired') {
+                return { text: 'Expired', color: 'text-red-600 font-medium',
+                    tooltip: `Employee did not sign before expiration. Sent ${sent}` };
+            }
+            if (empStatus === 'pending') {
+                return { text: 'Pending', color: 'text-amber-600 font-medium',
+                    tooltip: `Awaiting employee signature. Sent ${sent}` };
+            }
+            return { text: docState, color: 'text-slate-500', tooltip: `Sent ${sent}` };
         }
 
         // Render detail view modal
@@ -2931,23 +2969,26 @@
             'Phillis Wheatley Community School','Samuel J Green Charter School','FirstLine Network'];
 
         function switchHrView(view) {
-            const staffView = document.getElementById('staffView');
-            const pmapView = document.getElementById('pmapTrackerView');
-            const staffBtn = document.getElementById('staffViewBtn');
-            const pmapBtn = document.getElementById('pmapViewBtn');
+            const views = {
+                staff: document.getElementById('staffView'),
+                pmap: document.getElementById('pmapTrackerView'),
+                offer: document.getElementById('offerTrackerView'),
+            };
+            const btns = {
+                staff: document.getElementById('staffViewBtn'),
+                pmap: document.getElementById('pmapViewBtn'),
+                offer: document.getElementById('offerViewBtn'),
+            };
+            const active = 'px-4 py-2 text-sm font-semibold rounded-lg bg-fls-navy text-white transition-colors';
+            const inactive = 'px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors';
 
-            if (view === 'pmap') {
-                staffView.classList.add('hidden');
-                pmapView.classList.remove('hidden');
-                staffBtn.className = 'px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors';
-                pmapBtn.className = 'px-4 py-2 text-sm font-semibold rounded-lg bg-fls-navy text-white transition-colors';
-                if (!pmapNetworkData) loadPmapNetwork();
-            } else {
-                staffView.classList.remove('hidden');
-                pmapView.classList.add('hidden');
-                pmapBtn.className = 'px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors';
-                staffBtn.className = 'px-4 py-2 text-sm font-semibold rounded-lg bg-fls-navy text-white transition-colors';
-            }
+            Object.keys(views).forEach(k => {
+                views[k].classList.toggle('hidden', k !== view);
+                btns[k].className = k === view ? active : inactive;
+            });
+
+            if (view === 'pmap' && !pmapNetworkData) loadPmapNetwork();
+            if (view === 'offer' && !offerTrackerLoaded) loadOfferTracker();
         }
 
         async function loadPmapNetwork() {
@@ -3202,6 +3243,142 @@
             });
 
             html += '</div>';
+            return html;
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        // Offer Tracker View
+        // ─────────────────────────────────────────────────────────────
+
+        let offerTrackerLoaded = false;
+
+        function loadOfferTracker() {
+            // Uses staffData which is loaded by the staff view
+            if (!staffData || staffData.length === 0) {
+                document.getElementById('offerDrillDown').innerHTML =
+                    '<div class="text-slate-500 text-sm p-4">Loading staff data first...</div>';
+                setTimeout(loadOfferTracker, 1000);
+                return;
+            }
+            offerTrackerLoaded = true;
+            renderOfferSchoolCards();
+        }
+
+        function renderOfferSchoolCards() {
+            const container = document.getElementById('offerSchoolCards');
+            container.innerHTML = '';
+
+            const bySchool = {};
+            staffData.forEach(s => {
+                const sch = s.Location_Name || 'Unknown';
+                if (!bySchool[sch]) bySchool[sch] = [];
+                bySchool[sch].push(s);
+            });
+
+            // Only count staff who have been sent an offer letter
+            const allWithOffer = staffData.filter(s => s.offer_letter_doc_state);
+            const signed = allWithOffer.filter(s => s.offer_letter_doc_state === 'executed').length;
+            const awaitingCounter = allWithOffer.filter(s => s.offer_letter_employee_status === 'signed' && s.offer_letter_doc_state !== 'executed').length;
+            const pendingEmp = allWithOffer.filter(s => s.offer_letter_employee_status === 'pending' && s.offer_letter_doc_state === 'pending').length;
+            const expired = allWithOffer.filter(s => s.offer_letter_doc_state === 'expired').length;
+            const notSent = staffData.filter(s => !s.offer_letter_doc_state).length;
+
+            container.innerHTML += `
+                <div class="bg-fls-navy rounded-xl border-2 border-fls-orange p-4 text-white cursor-pointer hover:opacity-90 col-span-2 lg:col-span-4"
+                     onclick="renderOfferAllSchools()">
+                    <div class="text-xs font-semibold uppercase tracking-wide opacity-70 mb-2">Network Total — 26-27 Offer Letters</div>
+                    <div class="flex gap-6 flex-wrap">
+                        <div><div class="text-xl font-bold text-emerald-400">${signed}</div><div class="text-xs opacity-70">Signed</div></div>
+                        <div><div class="text-xl font-bold text-amber-400">${awaitingCounter}</div><div class="text-xs opacity-70">Awaiting Counter-Sig</div></div>
+                        <div><div class="text-xl font-bold text-amber-300">${pendingEmp}</div><div class="text-xs opacity-70">Pending Employee</div></div>
+                        <div><div class="text-xl font-bold text-red-400">${expired}</div><div class="text-xs opacity-70">Expired</div></div>
+                        <div><div class="text-xl font-bold text-slate-400">${notSent}</div><div class="text-xs opacity-70">Not Sent</div></div>
+                    </div>
+                </div>`;
+
+            const ordered = SCHOOL_ORDER.filter(s => bySchool[s]).concat(
+                Object.keys(bySchool).filter(s => !SCHOOL_ORDER.includes(s)).sort()
+            );
+
+            ordered.forEach(school => {
+                const staff = bySchool[school];
+                const withOffer = staff.filter(s => s.offer_letter_doc_state);
+                const sSigned = withOffer.filter(s => s.offer_letter_doc_state === 'executed').length;
+                const sExpired = withOffer.filter(s => s.offer_letter_doc_state === 'expired').length;
+                const sPending = withOffer.filter(s => s.offer_letter_doc_state === 'pending').length;
+                const sname = SCHOOL_SHORT[school] || school;
+
+                if (withOffer.length === 0) return; // skip schools with no offer letters
+
+                container.innerHTML += `
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 cursor-pointer hover:shadow-md transition-shadow"
+                         onclick="renderOfferSchoolDrill('${school.replace(/'/g, "\\'")}')">
+                        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">${sname}</div>
+                        <div class="text-sm">
+                            <span class="text-emerald-600 font-bold">${sSigned}</span> <span class="text-xs text-slate-400">signed</span>
+                            ${sPending ? `<span class="ml-2 text-amber-600 font-bold">${sPending}</span> <span class="text-xs text-slate-400">pending</span>` : ''}
+                            ${sExpired ? `<span class="ml-2 text-red-600 font-bold">${sExpired}</span> <span class="text-xs text-slate-400">expired</span>` : ''}
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function renderOfferAllSchools() {
+            const container = document.getElementById('offerDrillDown');
+            const bySchool = {};
+            staffData.forEach(s => {
+                const sch = s.Location_Name || 'Unknown';
+                if (!bySchool[sch]) bySchool[sch] = [];
+                bySchool[sch].push(s);
+            });
+            const ordered = SCHOOL_ORDER.filter(s => bySchool[s]).concat(
+                Object.keys(bySchool).filter(s => !SCHOOL_ORDER.includes(s)).sort()
+            );
+            let html = '<div class="space-y-6">';
+            ordered.forEach(school => {
+                const staff = bySchool[school].filter(s => s.offer_letter_doc_state);
+                if (staff.length > 0) html += renderOfferSchoolSection(school, staff);
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function renderOfferSchoolDrill(school) {
+            const staff = staffData.filter(s => s.Location_Name === school && s.offer_letter_doc_state);
+            const container = document.getElementById('offerDrillDown');
+            container.innerHTML = staff.length ? renderOfferSchoolSection(school, staff)
+                : '<div class="text-slate-500 text-sm p-4">No offer letters sent for this school.</div>';
+        }
+
+        function renderOfferSchoolSection(school, staff) {
+            const sname = SCHOOL_SHORT[school] || school;
+
+            let html = `<div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div class="bg-fls-navy text-white px-4 py-3 font-bold text-sm">${sname}</div>
+                <table class="w-full text-xs">
+                    <thead><tr class="bg-slate-50 text-slate-500">
+                        <th class="text-left px-4 py-2 font-semibold">Name</th>
+                        <th class="text-left px-2 py-2 font-semibold">Title</th>
+                        <th class="text-left px-2 py-2 font-semibold">Status</th>
+                        <th class="text-left px-2 py-2 font-semibold">Details</th>
+                    </tr></thead>
+                    <tbody>`;
+
+            // Sort: expired first, then pending, then signed
+            const order = { expired: 0, pending: 1, executed: 2 };
+            staff.sort((a, b) => (order[a.offer_letter_doc_state] || 9) - (order[b.offer_letter_doc_state] || 9));
+
+            staff.forEach(s => {
+                const info = getOfferLetterInfo(s);
+                html += `<tr class="border-t border-slate-50 hover:bg-slate-50">
+                    <td class="px-4 py-2">${s.Staff_Name || (s.first_name + ' ' + s.last_name)}</td>
+                    <td class="px-2 py-2 text-slate-500">${s.job_title || ''}</td>
+                    <td class="px-2 py-2"><span class="${info.color}">${info.text}</span></td>
+                    <td class="px-2 py-2 text-slate-400" title="${info.tooltip}">${info.tooltip}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table></div>';
             return html;
         }
     </script>
