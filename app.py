@@ -962,7 +962,7 @@ def create_position():
             "subject": data.get("subject", ""),
             "grade_level": data.get("grade_level", ""),
             "staffing_matrix": data.get("staffing_matrix", ""),
-            "current_status": data.get("current_status", "Open"),
+            "current_status": data.get("current_status", "") if data.get("start_year", "25-26") == "26-27" else data.get("current_status", "Open"),
             "first_name": data.get("first_name", ""),
             "last_name": data.get("last_name", ""),
             "employee_25_26": data.get("employee_25_26", ""),

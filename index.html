@@ -231,6 +231,7 @@
                         <button onclick="setView('overview')" id="tabOverview" class="segment-btn active" style="padding:5px 10px;font-size:12px">25-26</button>
                         <button onclick="setView('summary')" id="tabSummary" class="segment-btn" style="padding:5px 10px;font-size:12px">26-27</button>
                         <button onclick="setView('positions')" id="tabPositions" class="segment-btn" style="padding:5px 10px;font-size:12px">Positions</button>
+                        <button onclick="setView('matrix')" id="tabMatrix" class="segment-btn" style="padding:5px 10px;font-size:12px">Matrix</button>
                         <button onclick="setView('retention')" id="tabRetention" class="segment-btn hidden" style="padding:5px 10px;font-size:12px">Retention</button>
                         <button onclick="setView('pipeline')" id="tabPipeline" class="segment-btn hidden" style="padding:5px 10px;font-size:12px">Pipeline</button>
                     </div>
@@ -804,6 +805,28 @@
                 </div>
             </div>
 
+            <!-- Matrix View -->
+            <div id="viewMatrix" class="hidden">
+                <div class="flex items-center justify-between mb-5">
+                    <div class="flex bg-slate-100 rounded-lg p-1 gap-1">
+                        <button onclick="setMatrixYear('25-26')" id="matrixYear2526" class="segment-btn active text-xs">25-26</button>
+                        <button onclick="setMatrixYear('26-27')" id="matrixYear2627" class="segment-btn text-xs">26-27</button>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="flex gap-2 text-[10px]">
+                            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span> Filled/Active/Return</span>
+                            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-yellow-500 inline-block"></span> Possible Open</span>
+                            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span> Open</span>
+                            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block"></span> Offer Out</span>
+                            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-cyan-500 inline-block"></span> Finalist</span>
+                            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-slate-400 inline-block"></span> Not Filling</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="matrixSchoolTabs" class="flex gap-1 mb-4 flex-wrap"></div>
+                <div id="matrixContent"></div>
+            </div>
+
         </main>
     </div>
 
@@ -885,7 +908,33 @@
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="form-label">Staffing Matrix</label>
-                        <input type="text" id="editMatrix" class="form-input">
+                        <select id="editMatrix" class="form-input">
+                            <option value="">— Select —</option>
+                            <option value="PreK">PreK</option>
+                            <option value="Kindergarten">Kindergarten</option>
+                            <option value="First Grade">First Grade</option>
+                            <option value="Second Grade">Second Grade</option>
+                            <option value="Kinder through Second">Kinder through Second</option>
+                            <option value="Third Grade">Third Grade</option>
+                            <option value="Fourth Grade">Fourth Grade</option>
+                            <option value="Third and Fourth Grade">Third and Fourth Grade</option>
+                            <option value="Fifth Grade">Fifth Grade</option>
+                            <option value="Sixth Grade">Sixth Grade</option>
+                            <option value="Fifth and Sixth Grade">Fifth and Sixth Grade</option>
+                            <option value="Seventh Grade">Seventh Grade</option>
+                            <option value="Eighth Grade">Eighth Grade</option>
+                            <option value="Seventh and Eighth Grade">Seventh and Eighth Grade</option>
+                            <option value="Fifth Through Eighth">Fifth Through Eighth</option>
+                            <option value="Enrichment">Enrichment</option>
+                            <option value="ELL">ELL</option>
+                            <option value="Discovery K-2">Discovery K-2</option>
+                            <option value="Discovery 3-5">Discovery 3-5</option>
+                            <option value="Discovery 6-8">Discovery 6-8</option>
+                            <option value="Paraprofessionals">Paraprofessionals</option>
+                            <option value="Student Support Team">Student Support Team</option>
+                            <option value="Leadership Team">Leadership Team</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
                     <div></div>
                 </div>
@@ -928,6 +977,7 @@
                     <div>
                         <label class="form-label">Current Status (25-26)</label>
                         <select id="editStatus25" class="form-input">
+                            <option value="">—</option>
                             <option value="Active">Active</option>
                             <option value="Open">Open</option>
                             <option value="Finalist">Finalist</option>
@@ -939,6 +989,7 @@
                     <div>
                         <label class="form-label">26-27 Status</label>
                         <select id="editStatus26" class="form-input">
+                            <option value="">—</option>
                             <option value="Return">Return</option>
                             <option value="Possible Open">Possible Open</option>
                             <option value="Open">Open</option>
@@ -1155,6 +1206,7 @@
             document.getElementById('tab' + view.charAt(0).toUpperCase() + view.slice(1)).classList.add('active');
             if (view === 'retention') { if (!retentionLoaded) loadRetentionData(); }
             if (view === 'pipeline' && window._isTalent) { if (!pipeLoaded) loadPipelineData(); }
+            if (view === 'matrix') renderMatrix();
         }
 
         function setYearView(year) {
@@ -2953,6 +3005,8 @@
             document.getElementById('editEmployeeNumber').value = '';
             document.getElementById('editStartYear').value = '26-27';  // Default new positions to next year
             document.getElementById('editEndYear').value = '';  // Ongoing by default
+            document.getElementById('editStatus25').value = '';  // No 25-26 presence for new positions
+            document.getElementById('editStatus26').value = 'Open';  // Default 26-27 status
             document.getElementById('deleteBtn').classList.add('hidden');
             document.getElementById('hrisWarning').classList.add('hidden');  // Hide HRIS warning
             resetOccupancy();
@@ -3336,6 +3390,176 @@
                 document.getElementById('editStatus25').value = 'Active';
             }
         }
+        // ─────────────────────────────────────────────────────────────
+        // Matrix View
+        // ─────────────────────────────────────────────────────────────
+
+        let matrixYear = '25-26';
+        let matrixSchool = '';
+
+        const MATRIX_COL_ORDER = [
+            'PreK', 'Kindergarten', 'First Grade', 'Second Grade',
+            'Kinder through Second',
+            'Third Grade', 'Fourth Grade', 'Third and Fourth Grade',
+            'Fifth Grade', 'Sixth Grade', 'Fifth and Sixth Grade',
+            'Seventh Grade', 'Eighth Grade', 'Seventh and Eighth Grade',
+            'Fifth Through Eighth',
+            'Enrichment', 'ELL',
+            'Discovery K-2', 'Discovery 3-5', 'Discovery 6-8',
+            'Paraprofessionals',
+            'Student Support Team', 'Leadership Team', 'Other'
+        ];
+
+        function setMatrixYear(year) {
+            matrixYear = year;
+            document.getElementById('matrixYear2526').classList.toggle('active', year === '25-26');
+            document.getElementById('matrixYear2627').classList.toggle('active', year === '26-27');
+            renderMatrix();
+        }
+
+        function setMatrixSchool(school) {
+            matrixSchool = school;
+            renderMatrixSchoolTabs();
+            renderMatrixGrid();
+        }
+
+        function renderMatrix() {
+            if (!positions || positions.length === 0) return;
+            renderMatrixSchoolTabs();
+            renderMatrixGrid();
+        }
+
+        function renderMatrixSchoolTabs() {
+            const container = document.getElementById('matrixSchoolTabs');
+            const yearFiltered = positions.filter(p => {
+                if (matrixYear === '25-26' && p.start_year === '26-27') return false;
+                if (matrixYear === '26-27' && p.end_year === '25-26') return false;
+                return true;
+            });
+            const schools = [...new Set(yearFiltered.map(p => p.school).filter(Boolean))].sort();
+            if (!matrixSchool && schools.length > 0) {
+                // Default to first non-Network school
+                matrixSchool = schools.find(s => s !== 'Network') || schools[0];
+            }
+            container.innerHTML = schools.map(s =>
+                `<button onclick="setMatrixSchool('${s.replace(/'/g, "\\'")}')"
+                    class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors
+                    ${s === matrixSchool ? 'bg-fls-navy text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}"
+                >${s}</button>`
+            ).join('');
+        }
+
+        function getMatrixStatus(p) {
+            if (matrixYear === '25-26') {
+                const status = p.current_status || '';
+                const name = p.employee_25_26 || (p.first_name && p.last_name ? p.first_name + ' ' + p.last_name : '');
+                return { status, name };
+            } else {
+                const status = p.status_26_27 || '';
+                const name = p.employee_26_27 || '';
+                return { status, name };
+            }
+        }
+
+        function getMatrixCellColor(status) {
+            const s = (status || '').toLowerCase();
+            if (['active', 'return', 'filled'].includes(s)) return 'border-l-green-500 bg-green-50';
+            if (s === 'possible open') return 'border-l-yellow-500 bg-yellow-50';
+            if (s === 'open') return 'border-l-red-500 bg-red-50';
+            if (s === 'offer out') return 'border-l-indigo-500 bg-indigo-50';
+            if (s === 'finalist') return 'border-l-cyan-500 bg-cyan-50';
+            if (s === 'not filling seat' || s === 'seat change') return 'border-l-slate-400 bg-slate-50';
+            if (s === 'overhire') return 'border-l-blue-500 bg-blue-50';
+            return 'border-l-slate-300 bg-white';
+        }
+
+        function renderMatrixGrid() {
+            const container = document.getElementById('matrixContent');
+            const schoolPositions = positions.filter(p => {
+                if (p.school !== matrixSchool) return false;
+                // Exclude positions that don't belong to the selected year
+                if (matrixYear === '25-26' && p.start_year === '26-27') return false;
+                if (matrixYear === '25-26' && !p.current_status) return false;
+                if (matrixYear === '26-27' && p.end_year === '25-26') return false;
+                if (matrixYear === '26-27' && !p.status_26_27) return false;
+                return true;
+            });
+
+            if (schoolPositions.length === 0) {
+                container.innerHTML = '<div class="text-slate-500 text-sm p-4">No positions for this school.</div>';
+                return;
+            }
+
+            // Group by staffing_matrix
+            const groups = {};
+            schoolPositions.forEach(p => {
+                const matrix = p.staffing_matrix || 'Unassigned';
+                if (!groups[matrix]) groups[matrix] = [];
+                groups[matrix].push(p);
+            });
+
+            // Order columns
+            const columns = MATRIX_COL_ORDER.filter(c => groups[c]);
+            const remaining = Object.keys(groups).filter(c => !MATRIX_COL_ORDER.includes(c)).sort();
+            const allCols = [...columns, ...remaining];
+
+            // Find max rows for grid height
+            const maxRows = Math.max(...allCols.map(c => groups[c].length));
+
+            let html = '<div class="overflow-x-auto"><div class="inline-flex gap-3 min-w-full pb-4">';
+
+            allCols.forEach(col => {
+                const colPositions = groups[col];
+                // Sort: filled/active first, then possible, then open
+                colPositions.sort((a, b) => {
+                    const sa = getMatrixStatus(a);
+                    const sb = getMatrixStatus(b);
+                    const order = { 'active': 0, 'return': 0, 'filled': 1, 'overhire': 2, 'finalist': 3, 'offer out': 3, 'possible open': 4, 'open': 5, 'not filling seat': 6, 'seat change': 6 };
+                    return (order[sa.status.toLowerCase()] ?? 9) - (order[sb.status.toLowerCase()] ?? 9);
+                });
+
+                html += `<div class="flex-shrink-0" style="width:210px">
+                    <div class="bg-fls-navy text-white text-xs font-bold px-3 py-2 rounded-t-lg text-center">${col}</div>
+                    <div class="bg-white border border-slate-200 border-t-0 rounded-b-lg">`;
+
+                colPositions.forEach(p => {
+                    const { status, name } = getMatrixStatus(p);
+                    const displayName = name || 'Open';
+                    const title = p.job_title || '';
+                    const subject = p.subject || '';
+                    const titleSubject = [title, subject].filter(Boolean).join(' — ');
+                    const colorClass = getMatrixCellColor(status);
+
+                    html += `<div class="border-l-4 ${colorClass} px-2.5 py-2 border-b border-slate-100 cursor-pointer hover:opacity-80" onclick="openEdit('${p.position_id}')">
+                        <div class="text-xs font-semibold ${displayName === 'Open' ? 'text-red-600' : 'text-slate-800'}">${displayName}</div>
+                        <div class="text-[10px] text-slate-500 leading-tight">${titleSubject}</div>
+                        <div class="text-[9px] text-slate-400 mt-0.5">${status}</div>
+                    </div>`;
+                });
+
+                html += '</div></div>';
+            });
+
+            html += '</div></div>';
+
+            // Summary counts
+            const totalPositions = schoolPositions.length;
+            const statusCounts = {};
+            schoolPositions.forEach(p => {
+                const { status } = getMatrixStatus(p);
+                const s = status || 'Unknown';
+                statusCounts[s] = (statusCounts[s] || 0) + 1;
+            });
+            let summaryHtml = `<div class="flex gap-4 mt-4 text-xs text-slate-500">
+                <span class="font-semibold text-slate-700">${matrixSchool}: ${totalPositions} positions</span>`;
+            Object.entries(statusCounts).sort((a,b) => b[1] - a[1]).forEach(([s, c]) => {
+                summaryHtml += ` <span>${s}: ${c}</span>`;
+            });
+            summaryHtml += '</div>';
+
+            container.innerHTML = html + summaryHtml;
+        }
+
     </script>
 </body>
 </html>
