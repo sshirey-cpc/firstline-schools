@@ -3,7 +3,7 @@ Salary Projection Dashboard Blueprint
 Interactive salary scenario modeling for CEO presentations
 """
 
-from flask import Blueprint, request, jsonify, send_from_directory, session, redirect, url_for
+from flask import Blueprint, request, jsonify, session, redirect, url_for
 from functools import wraps
 from google.cloud import bigquery
 import os
@@ -63,7 +63,8 @@ YOS_BONUS_DEFAULT = {
 @bp.route('/salary-dashboard')
 def serve_dashboard():
     """Serve the salary dashboard HTML."""
-    return send_from_directory(HTML_DIR, 'salary-dashboard.html')
+    from app import serve_html
+    return serve_html(os.path.join(HTML_DIR, 'salary-dashboard.html'))
 
 
 @bp.route('/api/salary/access')

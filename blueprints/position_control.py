@@ -12,7 +12,7 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 from functools import wraps
 
-from flask import Blueprint, request, jsonify, send_from_directory, session
+from flask import Blueprint, request, jsonify, session
 from google.cloud import bigquery
 
 from config import (
@@ -165,7 +165,8 @@ def send_email(to_email, subject, html_body, cc_emails=None):
 @bp.route('/position-control-dashboard')
 def dashboard():
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    return send_from_directory(root, 'position-control-dashboard.html')
+    from app import serve_html
+    return serve_html(os.path.join(root, 'position-control-dashboard.html'))
 
 
 @bp.route('/api/pcf/admin/requests', methods=['GET'])

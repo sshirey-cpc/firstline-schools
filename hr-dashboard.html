@@ -342,6 +342,7 @@
                 <button id="staffViewBtn" onclick="switchHrView('staff')" class="px-4 py-2 text-sm font-semibold rounded-lg bg-fls-navy text-white transition-colors">Staff View</button>
                 <button id="pmapViewBtn" onclick="switchHrView('pmap')" class="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">PMAP Tracker</button>
                 <button id="offerViewBtn" onclick="switchHrView('offer')" class="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">Offer Tracker</button>
+                <button id="obsViewBtn" onclick="switchHrView('obs')" class="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">Observations</button>
             </div>
 
             <!-- PMAP Tracker View -->
@@ -354,6 +355,11 @@
             <div id="offerTrackerView" class="hidden">
                 <div id="offerSchoolCards" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6"></div>
                 <div id="offerDrillDown"></div>
+            </div>
+
+            <!-- Observations View -->
+            <div id="obsView" class="hidden">
+                <div id="obsContent"></div>
             </div>
 
             <!-- Staff View (existing) -->
@@ -2973,11 +2979,13 @@
                 staff: document.getElementById('staffView'),
                 pmap: document.getElementById('pmapTrackerView'),
                 offer: document.getElementById('offerTrackerView'),
+                obs: document.getElementById('obsView'),
             };
             const btns = {
                 staff: document.getElementById('staffViewBtn'),
                 pmap: document.getElementById('pmapViewBtn'),
                 offer: document.getElementById('offerViewBtn'),
+                obs: document.getElementById('obsViewBtn'),
             };
             const active = 'px-4 py-2 text-sm font-semibold rounded-lg bg-fls-navy text-white transition-colors';
             const inactive = 'px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors';
@@ -2989,6 +2997,7 @@
 
             if (view === 'pmap' && !pmapNetworkData) loadPmapNetwork();
             if (view === 'offer' && !offerTrackerLoaded) loadOfferTracker();
+            if (view === 'obs' && !obsLoaded) loadObsView();
         }
 
         async function loadPmapNetwork() {
@@ -3381,6 +3390,132 @@
             html += '</tbody></table></div>';
             return html;
         }
+        // ─────────────────────────────────────────────────────────────
+        // Observations View
+        // ─────────────────────────────────────────────────────────────
+
+        let obsLoaded = false;
+
+        function loadObsView() {
+            if (!staffData || staffData.length === 0) {
+                document.getElementById('obsContent').innerHTML =
+                    '<div class="text-slate-500 text-sm p-4">Loading staff data first...</div>';
+                setTimeout(loadObsView, 1000);
+                return;
+            }
+            obsLoaded = true;
+            renderObsView();
+        }
+
+        function renderObsView() {
+            const container = document.getElementById('obsContent');
+            const active = staffData.filter(s => s.Employment_Status === 'Active' || s.Employment_Status === 'Leave of absence');
+
+            // Network totals
+            const totalObs = active.reduce((sum, s) => sum + (s.total_observations || 0), 0);
+            const staffWithObs = active.filter(s => (s.total_observations || 0) > 0).length;
+            const avgPerEmployee = active.length > 0 ? (totalObs / active.length).toFixed(1) : 0;
+
+            // Group by supervisor — observations conducted (supervisor is the observer)
+            // We use total_observations which counts all published obs for each staff member
+            // Group by supervisor to get: total obs of their team, avg per employee, staff count
+            const bySupervisor = {};
+            active.forEach(s => {
+                const sup = s.Supervisor_Name__Unsecured_ || 'Unknown';
+                if (!bySupervisor[sup]) bySupervisor[sup] = { total: 0, count: 0 };
+                bySupervisor[sup].total += (s.total_observations || 0);
+                bySupervisor[sup].count += 1;
+            });
+
+            // Calculate avg per employee for each supervisor
+            Object.keys(bySupervisor).forEach(sup => {
+                bySupervisor[sup].avg = bySupervisor[sup].count > 0
+                    ? (bySupervisor[sup].total / bySupervisor[sup].count) : 0;
+            });
+
+            // Top 10 by total observations
+            const topByTotal = Object.entries(bySupervisor)
+                .sort((a, b) => b[1].total - a[1].total)
+                .slice(0, 10);
+
+            // Top 10 by avg per employee (min 3 staff to qualify)
+            const topByAvg = Object.entries(bySupervisor)
+                .filter(([, v]) => v.count >= 3)
+                .sort((a, b) => b[1].avg - a[1].avg)
+                .slice(0, 10);
+
+            // Find max values for bar scaling
+            const maxTotal = topByTotal.length > 0 ? topByTotal[0][1].total : 1;
+            const maxAvg = topByAvg.length > 0 ? topByAvg[0][1].avg : 1;
+
+            let html = '';
+
+            // Summary cards
+            html += `<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="bg-fls-navy rounded-xl p-4 text-white">
+                    <div class="text-3xl font-bold">${totalObs.toLocaleString()}</div>
+                    <div class="text-xs opacity-70">Total Observations</div>
+                </div>
+                <div class="bg-white rounded-xl border border-slate-200 p-4">
+                    <div class="text-3xl font-bold text-fls-navy">${staffWithObs}</div>
+                    <div class="text-xs text-slate-500">Staff with Observations</div>
+                </div>
+                <div class="bg-white rounded-xl border border-slate-200 p-4">
+                    <div class="text-3xl font-bold text-fls-navy">${avgPerEmployee}</div>
+                    <div class="text-xs text-slate-500">Avg per Employee</div>
+                </div>
+                <div class="bg-white rounded-xl border border-slate-200 p-4">
+                    <div class="text-3xl font-bold text-fls-navy">${active.length - staffWithObs}</div>
+                    <div class="text-xs text-slate-500">Staff with Zero</div>
+                </div>
+            </div>`;
+
+            // Two charts side by side
+            html += '<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">';
+
+            // Top 10 supervisors by total observations
+            html += `<div class="bg-white rounded-xl border border-slate-200 p-5">
+                <h3 class="text-sm font-bold text-fls-navy mb-4">Top 10 Supervisors — Total Observations</h3>
+                <div class="space-y-2">`;
+            topByTotal.forEach(([name, data]) => {
+                const pct = (data.total / maxTotal * 100).toFixed(0);
+                const shortName = name.split(',')[0] || name.split(' ').slice(-1)[0];
+                html += `<div class="flex items-center gap-2">
+                    <div class="w-28 text-xs text-slate-600 truncate text-right" title="${name}">${shortName}</div>
+                    <div class="flex-1 bg-slate-100 rounded-full h-6 overflow-hidden">
+                        <div class="h-full rounded-full flex items-center justify-end pr-2" style="width:${pct}%;background:#002f60">
+                            <span class="text-[10px] font-bold text-white">${data.total}</span>
+                        </div>
+                    </div>
+                    <div class="w-12 text-[10px] text-slate-400">${data.count} staff</div>
+                </div>`;
+            });
+            html += '</div></div>';
+
+            // Top 10 supervisors by avg per employee
+            html += `<div class="bg-white rounded-xl border border-slate-200 p-5">
+                <h3 class="text-sm font-bold text-fls-navy mb-4">Top 10 Supervisors — Avg per Employee</h3>
+                <div class="space-y-2">`;
+            topByAvg.forEach(([name, data]) => {
+                const pct = (data.avg / maxAvg * 100).toFixed(0);
+                const shortName = name.split(',')[0] || name.split(' ').slice(-1)[0];
+                html += `<div class="flex items-center gap-2">
+                    <div class="w-28 text-xs text-slate-600 truncate text-right" title="${name}">${shortName}</div>
+                    <div class="flex-1 bg-slate-100 rounded-full h-6 overflow-hidden">
+                        <div class="h-full rounded-full flex items-center justify-end pr-2" style="width:${pct}%;background:#e47727">
+                            <span class="text-[10px] font-bold text-white">${data.avg.toFixed(1)}</span>
+                        </div>
+                    </div>
+                    <div class="w-12 text-[10px] text-slate-400">${data.count} staff</div>
+                </div>`;
+            });
+            html += '</div></div>';
+
+            html += '</div>';
+
+            container.innerHTML = html;
+        }
+
     </script>
 </body>
 </html>

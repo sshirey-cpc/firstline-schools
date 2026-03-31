@@ -2,7 +2,7 @@
 
 import os
 import logging
-from flask import Blueprint, jsonify, request, session, send_from_directory
+from flask import Blueprint, jsonify, request, session
 from google.cloud import bigquery
 
 from config import (
@@ -68,7 +68,8 @@ def _get_table_and_access_condition(user_email, access):
 @bp.route('/kickboard-dashboard')
 def kickboard_dashboard():
     """Serve the Kickboard Dashboard HTML file"""
-    return send_from_directory(HTML_DIR, 'kickboard-dashboard.html')
+    from app import serve_html
+    return serve_html(os.path.join(HTML_DIR, 'kickboard-dashboard.html'))
 
 
 @bp.route('/api/kickboard/summary', methods=['GET'])

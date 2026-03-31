@@ -2,7 +2,7 @@
 
 import os
 import logging
-from flask import Blueprint, jsonify, send_from_directory
+from flask import Blueprint, jsonify
 from google.cloud import bigquery
 
 from config import PROJECT_ID, DATASET_ID
@@ -19,7 +19,8 @@ HTML_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 @bp.route('/orgchart')
 def orgchart():
     """Serve the organization chart HTML file (Google Charts version)"""
-    return send_from_directory(HTML_DIR, 'orgchart.html')
+    from app import serve_html
+    return serve_html(os.path.join(HTML_DIR, 'orgchart.html'))
 
 
 @bp.route('/api/orgchart', methods=['GET'])

@@ -2,7 +2,7 @@
 
 import os
 import logging
-from flask import Blueprint, jsonify, request, session, send_from_directory
+from flask import Blueprint, jsonify, request, session
 from google.cloud import bigquery
 
 from config import (
@@ -67,7 +67,8 @@ def _build_date_conditions(date_from, date_to, cols, params):
 @bp.route('/suspensions-dashboard')
 def suspensions_dashboard():
     """Serve the Suspensions Dashboard HTML file"""
-    return send_from_directory(HTML_DIR, 'suspensions-dashboard.html')
+    from app import serve_html
+    return serve_html(os.path.join(HTML_DIR, 'suspensions-dashboard.html'))
 
 
 @bp.route('/api/suspensions/summary', methods=['GET'])

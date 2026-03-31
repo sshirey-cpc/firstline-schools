@@ -3,7 +3,7 @@ Flask backend for Supervisor Dashboard
 App factory + blueprint registration
 """
 
-from flask import Flask, session
+from flask import Flask, session, request, redirect, make_response
 from flask_cors import CORS
 from werkzeug.middleware.proxy_fix import ProxyFix
 import logging
@@ -16,6 +16,22 @@ from extensions import oauth, bq_client
 
 # Build version — set once at startup, changes with each deployment
 BUILD_VERSION = str(int(time.time()))
+
+
+def serve_html(filepath):
+    """Serve an HTML file with automatic cache-busting.
+    Redirects to a versioned URL so browsers always get fresh content after deploys."""
+    req_version = request.args.get('_v', '')
+    if req_version != BUILD_VERSION:
+        # Preserve any other query params
+        path = request.path
+        return redirect(f'{path}?_v={BUILD_VERSION}')
+    with open(filepath, 'r', encoding='utf-8') as f:
+        content = f.read()
+    response = make_response(content)
+    response.headers['Content-Type'] = 'text/html; charset=utf-8'
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

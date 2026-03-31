@@ -2,7 +2,7 @@
 
 import os
 import logging
-from flask import Blueprint, jsonify, request, session, send_from_directory
+from flask import Blueprint, jsonify, request, session
 from google.cloud import bigquery
 
 from config import PROJECT_ID, DATASET_ID, TABLE_ID, CURRENT_SY_START, PM_RESULTS_BY_TEST, PM_RESULTS_RAW, STUDENT_ROSTER, CLASS_SCHEDULES, SPS_BOTTOM_25
@@ -22,7 +22,8 @@ HTML_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 @bp.route('/schools-dashboard')
 def schools_dashboard():
     """Serve the Schools Dashboard HTML file"""
-    return send_from_directory(HTML_DIR, 'schools-dashboard.html')
+    from app import serve_html
+    return serve_html(os.path.join(HTML_DIR, 'schools-dashboard.html'))
 
 
 @bp.route('/api/schools/staff', methods=['GET'])

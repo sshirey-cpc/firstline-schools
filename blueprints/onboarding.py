@@ -8,7 +8,7 @@ import logging
 from datetime import datetime
 from functools import wraps
 
-from flask import Blueprint, request, jsonify, send_from_directory, session
+from flask import Blueprint, request, jsonify, session
 from google.cloud import bigquery
 
 from config import (
@@ -112,7 +112,8 @@ def update_submission(submission_id, updates):
 @bp.route('/onboarding-dashboard')
 def dashboard():
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    return send_from_directory(root, 'onboarding-dashboard.html')
+    from app import serve_html
+    return serve_html(os.path.join(root, 'onboarding-dashboard.html'))
 
 
 @bp.route('/api/onboarding/admin/submissions', methods=['GET'])

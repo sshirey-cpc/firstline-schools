@@ -2,7 +2,7 @@
 
 import os
 import logging
-from flask import Blueprint, jsonify, request, session, send_from_directory
+from flask import Blueprint, jsonify, request, session
 from google.cloud import bigquery
 
 from config import PROJECT_ID
@@ -21,7 +21,8 @@ STAFF_LIST_TABLE = f'{PROJECT_ID}.talent_grow_observations.staff_master_list_wit
 @bp.route('/staff-list-dashboard')
 def staff_list_dashboard():
     """Serve the Staff List Dashboard HTML file."""
-    return send_from_directory(HTML_DIR, 'staff-list-dashboard.html')
+    from app import serve_html
+    return serve_html(os.path.join(HTML_DIR, 'staff-list-dashboard.html'))
 
 
 @bp.route('/api/staff-list/data', methods=['GET'])
