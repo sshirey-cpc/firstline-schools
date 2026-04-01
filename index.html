@@ -3475,6 +3475,10 @@
 
         function renderMatrixGrid() {
             const container = document.getElementById('matrixContent');
+            // Preserve scroll position across re-renders
+            const scrollEl = container.querySelector('.overflow-x-auto');
+            const savedScroll = scrollEl ? scrollEl.scrollLeft : 0;
+
             const schoolPositions = positions.filter(p => {
                 if (p.school !== matrixSchool) return false;
                 // Exclude positions that don't belong to the selected year
@@ -3558,6 +3562,10 @@
             summaryHtml += '</div>';
 
             container.innerHTML = html + summaryHtml;
+
+            // Restore scroll position
+            const newScrollEl = container.querySelector('.overflow-x-auto');
+            if (newScrollEl && savedScroll) newScrollEl.scrollLeft = savedScroll;
         }
 
     </script>
