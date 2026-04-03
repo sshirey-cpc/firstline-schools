@@ -76,6 +76,12 @@ ADMIN_ROLES = {
         'can_edit': False,
         'can_delete': False,
     },
+    'jlombas@firstlineschools.org': {
+        'role': 'viewer',
+        'title': 'Recruitment Manager',
+        'can_edit': False,
+        'can_delete': False,
+    },
 }
 
 ADMIN_USERS = list(ADMIN_ROLES.keys())
