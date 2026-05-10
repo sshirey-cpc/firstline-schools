@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Teacher Observation — ObservationPoint</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#f5f7fa;color:#111827;-webkit-font-smoothing:antialiased}
+
+/* Nav */
+.nav{position:sticky;top:0;z-index:100;background:#002f60;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.nav-back{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.nav-title{font-size:15px;font-weight:700;color:#fff;flex:1}
+.nav-title span{color:#e47727}
+
+/* Teacher banner */
+.teacher-banner{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fff;border-bottom:1px solid #e5e7eb}
+.tb-av{width:40px;height:40px;border-radius:10px;background:#002f60;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700}
+.tb-name{font-size:15px;font-weight:600}
+.tb-meta{font-size:12px;color:#6b7280}
+.tb-badge{margin-left:auto;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;background:#dbeafe;color:#2563eb}
+
+/* Content */
+.content{padding:0 16px 120px}
+
+/* Section */
+.section{margin-top:16px}
+.section-title{font-size:16px;font-weight:700;margin-bottom:10px;letter-spacing:-.01em}
+.section-sub{font-size:12px;color:#9ca3af;margin-top:-6px;margin-bottom:10px}
+
+/* Recording bar */
+.rec-bar{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-top:16px}
+.rec-btn{width:44px;height:44px;border-radius:50%;border:2.5px solid #dc2626;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .2s}
+.rec-dot{width:18px;height:18px;border-radius:50%;background:#dc2626;transition:all .2s}
+.rec-bar.on{background:#fef2f2;border:1px solid #fecaca}
+.rec-bar.on .rec-dot{width:14px;height:14px;border-radius:3px}
+.rec-bar.on .rec-btn{animation:rpulse 1.5s infinite}
+@keyframes rpulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.3)}50%{box-shadow:0 0 0 8px rgba(220,38,38,0)}}
+.rec-time{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+.rec-bar.on .rec-time{color:#dc2626}
+.rec-label{font-size:11px;color:#9ca3af}
+.rec-bar.on .rec-label{color:#dc2626}
+.ai-toggle{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:#6b7280}
+.tog{width:40px;height:22px;border-radius:11px;background:#d1d5db;cursor:pointer;position:relative;transition:all .3s}
+.tog.on{background:#e47727}
+.tog-t{width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:all .3s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.tog.on .tog-t{left:20px}
+
+/* Rubric card */
+.rub{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px;margin-bottom:10px;border-left:4px solid #e5e7eb;transition:border-color .2s}
+.rub-code{font-size:11px;font-weight:700;color:#002f60;background:#002f600a;padding:2px 6px;border-radius:4px;display:inline-block;margin-bottom:6px}
+.rub-req{font-size:10px;color:#dc2626;font-weight:600;float:right}
+.rub-q{font-size:14px;font-weight:500;line-height:1.5;margin-bottom:12px}
+.scores{display:flex;gap:6px}
+.sc{flex:1;padding:14px 4px;border-radius:8px;border:2px solid #e5e7eb;background:#fff;text-align:center;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.sc:active{transform:scale(.92)}
+.sc .n{font-size:18px;font-weight:700;color:#9ca3af;display:block}
+.sc .l{font-size:8px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.03em}
+.sc.sel .n,.sc.sel .l{color:#fff}
+.sc[data-v="1"].sel{background:#ef4444;border-color:#ef4444}
+.sc[data-v="2"].sel{background:#f97316;border-color:#f97316}
+.sc[data-v="3"].sel{background:#eab308;border-color:#eab308}
+.sc[data-v="4"].sel{background:#22c55e;border-color:#22c55e}
+.sc[data-v="5"].sel{background:#0ea5e9;border-color:#0ea5e9}
+
+/* Expandable descriptor */
+.desc-toggle{font-size:12px;color:#e47727;cursor:pointer;margin-top:8px;display:flex;align-items:center;gap:4px}
+.desc-body{display:none;margin-top:8px;padding:10px;background:#f5f7fa;border-radius:8px;font-size:12px;color:#6b7280;line-height:1.6}
+.desc-body.open{display:block}
+
+/* Notes */
+.notes-label{font-size:13px;font-weight:600;margin-bottom:6px}
+textarea{width:100%;padding:12px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;color:#111827;line-height:1.6;resize:vertical;outline:none;min-height:80px}
+textarea:focus{border-color:#e47727}
+textarea::placeholder{color:#9ca3af}
+
+/* Feedback section */
+.fb{margin-bottom:14px}
+
+/* Action step cards */
+.act{padding:14px;border:1.5px solid #e5e7eb;border-radius:10px;margin-bottom:8px;cursor:pointer;transition:all .2s;background:#fff}
+.act:active{transform:scale(.98)}
+.act.sel{border-color:#e47727;background:#fff7ed}
+.act-cat{font-size:10px;font-weight:700;color:#e47727;text-transform:uppercase;letter-spacing:.04em}
+.act-name{font-size:13px;font-weight:600;margin-top:3px}
+.act-prompt{font-size:12px;color:#2563eb;font-style:italic;margin-top:8px;padding:8px 10px;background:#eff6ff;border-radius:6px;line-height:1.5;display:none}
+.act.sel .act-prompt{display:block}
+.act-rtc{font-size:11px;color:#9ca3af;margin-top:4px;display:none}
+.act.sel .act-rtc{display:block}
+
+/* Bottom bar */
+.bottom{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e7eb;padding:10px 16px;padding-bottom:max(10px,env(safe-area-inset-bottom));display:flex;gap:8px;z-index:100}
+.btn{flex:1;padding:15px;border-radius:12px;font-size:14px;font-weight:600;text-align:center;cursor:pointer;font-family:'Inter',sans-serif;border:none}
+.btn:active{transform:scale(.97)}
+.btn-pri{background:#e47727;color:#fff}
+.btn-out{background:#fff;color:#111827;border:1.5px solid #e5e7eb}
+
+/* Success */
+.success{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(6px);z-index:200;align-items:center;justify-content:center}
+.success-box{background:#fff;border-radius:20px;padding:36px 28px;text-align:center;margin:16px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.check{width:56px;height:56px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+
+/* Divider */
+.divider{height:1px;background:#e5e7eb;margin:20px 0}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+    <div class="nav-back" onclick="history.back()">
+        <svg width="18" height="18" fill="none" stroke="white" stroke-width="2"><path d="M15 9H3m0 0l5-5M3 9l5 5"/></svg>
+    </div>
+    <div class="nav-title">Observation<span>Point</span></div>
+</nav>
+
+<!-- Teacher -->
+<div class="teacher-banner">
+    <div class="tb-av">MW</div>
+    <div style="flex:1">
+        <div class="tb-name">Marcus Williams</div>
+        <div class="tb-meta">Samuel J. Green &middot; 5th Grade Math</div>
+    </div>
+    <a href="teacher-profile.html?teacher=marcus.williams@demo.local" target="_blank" rel="noopener"
+       style="display:flex;align-items:center;gap:4px;padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:11px;font-weight:600;color:#002f60;text-decoration:none;margin-right:6px"
+       title="Open profile in new tab">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16"><path d="M3 8h10m-4-4 4 4-4 4"/></svg>
+        History
+    </a>
+    <div class="tb-badge">Teacher Obs</div>
+</div>
+<div style="padding:8px 16px 12px;background:#fff;border-bottom:1px solid #e5e7eb">
+    <div id="addedTeachers" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
+    <div onclick="showAdd()" style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#e47727;cursor:pointer;padding:6px 0"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 1v12M1 7h12"/></svg> Add another teacher</div>
+    <div id="addSearch" style="display:none;margin-top:6px"><input id="addInput" placeholder="Search name..." oninput="filterAdd(this.value)" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:Inter,sans-serif;outline:none"><div style="max-height:160px;overflow-y:auto;margin-top:4px"><div class="add-i" onclick="addT('Keisha Brown')">Keisha Brown</div><div class="add-i" onclick="addT('David Chen')">David Chen</div><div class="add-i" onclick="addT('Amara Johnson')">Amara Johnson</div></div></div>
+</div>
+
+<div class="content">
+
+<!-- Recording Bar -->
+<div class="rec-bar" id="recBar" onclick="toggleRec()">
+    <div class="rec-btn"><div class="rec-dot"></div></div>
+    <div>
+        <div class="rec-time" id="recTime">00:00</div>
+        <div class="rec-label" id="recLabel">Tap to record</div>
+    </div>
+    <div class="ai-toggle" onclick="event.stopPropagation()">
+        <span>AI</span>
+        <div class="tog on" id="aiTog" onclick="this.classList.toggle('on')"><div class="tog-t"></div></div>
+    </div>
+</div>
+
+<!-- Notes -->
+<div class="section">
+    <div class="notes-label">Observation Notes</div>
+    <textarea placeholder="Type observations here..." rows="3"></textarea>
+</div>
+
+<div class="divider"></div>
+
+<!-- Rubric -->
+<div class="section">
+    <div class="section-title">FLS Teacher Rubric</div>
+    <div class="section-sub">Score at least one area. A rating of 1 requires explanation.</div>
+
+    <!-- T1 -->
+    <div class="rub" id="r1">
+        <div class="rub-req">Required</div>
+        <div class="rub-code">T1</div>
+        <div class="rub-q">On Task &mdash; Are all students engaged in the work of the lesson from start to finish?</div>
+        <div class="scores">
+            <div class="sc" data-v="1" onclick="score(this)"><span class="n">1</span><span class="l">NI</span></div>
+            <div class="sc" data-v="2" onclick="score(this)"><span class="n">2</span><span class="l">Emrg</span></div>
+            <div class="sc" data-v="3" onclick="score(this)"><span class="n">3</span><span class="l">Dev</span></div>
+            <div class="sc" data-v="4" onclick="score(this)"><span class="n">4</span><span class="l">Prof</span></div>
+            <div class="sc" data-v="5" onclick="score(this)"><span class="n">5</span><span class="l">Exm</span></div>
+        </div>
+        <div class="desc-toggle" onclick="toggleDesc(this)">&#9654; View rubric descriptors</div>
+        <div class="desc-body"><strong>1 &mdash; Needs Improvement:</strong> Very few or no students complete instructional tasks, volunteer responses and/or ask appropriate questions. Very few or no students demonstrate a clear understanding of behavioral expectations and/or directions through their actions. Students do not execute transitions, routines and procedures in an orderly manner. Students are left without work to do for a significant portion of the class period.<br><br><strong>2 &mdash; Emerging:</strong> Some students complete instructional tasks, volunteer responses and/or ask appropriate questions. Some students demonstrate a clear understanding of behavioral expectations and/or directions. Students execute transitions, routines and procedures in an orderly and efficient manner only some of the time and/or require substantial direction from the teacher. Students are idle while waiting for the teacher or left with nothing to do for one or two minutes at a time.<br><br><strong>3 &mdash; Developing:</strong> Most students complete instructional tasks, volunteer responses and/or ask appropriate questions. Most students demonstrate a clear understanding of behavioral expectations and directions. Students execute transitions, routines and procedures in an orderly and efficient manner most of the time, though they may require some direction from the teacher. Students are idle for short periods of time (less than one minute at a time) while waiting for the teacher to provide directions, when finishing assigned work early, or during transitions.<br><br><strong>4 &mdash; Proficient:</strong> All or almost all students complete instructional tasks, volunteer responses and/or ask appropriate questions. All or almost all students follow behavioral expectations and/or directions. Students execute transitions, routines and procedures in an orderly and efficient manner with minimal direction or narration from the teacher. Class has a quick pace and students are engaged in the work of the lesson from start to finish. Students who finish assigned work early engage in meaningful learning without interrupting other students' learning.<br><br><strong>5 &mdash; Exemplary:</strong> All descriptors for Level 4 are met, and at least one of the following types of evidence is demonstrated: Students assume responsibility for routines and procedures and execute them in an orderly, efficient and self-directed manner, requiring no direction or narration from the teacher. Students demonstrate a sense of ownership of behavioral expectations by holding each other accountable for meeting them.</div>
+    </div>
+
+    <!-- T2 -->
+    <div class="rub" id="r2">
+        <div class="rub-code">T2</div>
+        <div class="rub-q">Community of Learners &mdash; Are all students active members of a joyful and supportive classroom community?</div>
+        <div class="scores">
+            <div class="sc" data-v="1" onclick="score(this)"><span class="n">1</span><span class="l">NI</span></div>
+            <div class="sc" data-v="2" onclick="score(this)"><span class="n">2</span><span class="l">Emrg</span></div>
+            <div class="sc" data-v="3" onclick="score(this)"><span class="n">3</span><span class="l">Dev</span></div>
+            <div class="sc" data-v="4" onclick="score(this)"><span class="n">4</span><span class="l">Prof</span></div>
+            <div class="sc" data-v="5" onclick="score(this)"><span class="n">5</span><span class="l">Exm</span></div>
+        </div>
+        <div class="desc-toggle" onclick="toggleDesc(this)">&#9654; View rubric descriptors</div>
+        <div class="desc-body"><strong>1 &mdash; Needs Improvement:</strong> Few students use kind words &amp; actions and show empathy towards their peers when working with others. Few students respond to consequences calmly. Classroom norms are minimally evident. Few students frequently participate in the use of Kagan Strategies. The teacher rarely incorporates Kagan activities. General Characteristic: Negative teacher-student or student-student interactions.<br><br><strong>2 &mdash; Emerging:</strong> Some students use kind words &amp; actions and show empathy towards their peers. Some students respond to consequences calmly. Classroom norms are partially evident. Some students participate in Kagan Strategies. The teacher sometimes incorporates Kagan activities. General Characteristic: Neutral teacher-student or student-student interactions.<br><br><strong>3 &mdash; Developing:</strong> Most students use kind words &amp; actions and show empathy towards their peers. Most students respond to consequences calmly. Classroom norms are mostly evident through student interaction. Most students participate in Kagan Strategies. The teacher almost always incorporates 2 Kagan class-building activities &amp; 1 team-building activity every week. General Characteristic: Positive, teacher-driven teacher-student and student-student interactions.<br><br><strong>4 &mdash; Proficient:</strong> All students use kind words &amp; actions and show empathy. All students respond to consequences calmly. All students frequently share positive communication, affirmations, and celebrations. Classroom norms are evident through student interaction and through encouraging and celebrating risk-taking, collaboration, respect for divergent thinking and students' culture. The teacher always incorporates 2 Kagan class-building activities &amp; 1 team-building activity every week. At least 1 Kagan structure is used in all lessons. Teacher always ends the use of a structure with a "gambit." General Characteristic: Positive, student-driven teacher-student and student-student interactions.<br><br><strong>5 &mdash; Exemplary:</strong> All descriptors for Level 4 are met, and at least one of the following: Students exhibit strong problem solving skills related to peers and the classroom community that enhance interactions. Students participate in Kagan structures at an exemplary level.</div>
+    </div>
+
+    <!-- T3 -->
+    <div class="rub" id="r3">
+        <div class="rub-code">T3</div>
+        <div class="rub-q">Essential Content &mdash; Are all students working with content aligned to appropriate standards?</div>
+        <div class="scores">
+            <div class="sc" data-v="1" onclick="score(this)"><span class="n">1</span><span class="l">NI</span></div>
+            <div class="sc" data-v="2" onclick="score(this)"><span class="n">2</span><span class="l">Emrg</span></div>
+            <div class="sc" data-v="3" onclick="score(this)"><span class="n">3</span><span class="l">Dev</span></div>
+            <div class="sc" data-v="4" onclick="score(this)"><span class="n">4</span><span class="l">Prof</span></div>
+            <div class="sc" data-v="5" onclick="score(this)"><span class="n">5</span><span class="l">Exm</span></div>
+        </div>
+        <div class="desc-toggle" onclick="toggleDesc(this)">&#9654; View rubric descriptors</div>
+        <div class="desc-body"><strong>1 &mdash; Needs Improvement:</strong> The lesson does not focus on content that advances students toward grade-level standards or expectations and/or IEP goals. Most of the activities students engage in are not aligned to the stated or implied learning goal(s) or to each other. Instructional materials are not aligned to the FLS subject-specific framework and are not appropriately demanding. Few lessons drive towards students answering a meaning driven question.<br><br><strong>2 &mdash; Emerging:</strong> The lesson partially focuses on content that advances students toward grade-level standards. Only some activities students engage in are aligned to the stated or implied learning goal(s). Some instructional materials are not aligned or appropriately demanding. Some lessons drive towards a meaning driven question.<br><br><strong>3 &mdash; Developing:</strong> The lesson focuses on content that advances students toward grade-level standards. Most activities are aligned to the learning goal(s) and move students toward mastery. Most instructional materials are aligned to the FLS subject-specific framework and are appropriately demanding. Most lessons drive towards a meaning driven question.<br><br><strong>4 &mdash; Proficient:</strong> The lesson focuses on grade-level content. All activities are aligned to the learning goal(s) and are well-sequenced and build on each other to move students toward mastery. All instructional materials are aligned to the FLS subject-specific framework, high-quality and appropriately demanding for the grade/course. All lessons drive towards students answering a meaning driven question.<br><br><strong>5 &mdash; Exemplary:</strong> All descriptors for Level 4 are met, and the following evidence is demonstrated: Students make connections between what they are learning and other content across disciplines. Students independently connect lesson content to real-world situations.</div>
+    </div>
+
+    <!-- T4 -->
+    <div class="rub" id="r4">
+        <div class="rub-code">T4</div>
+        <div class="rub-q">Cognitive Engagement &mdash; Are all students responsible for doing the thinking?</div>
+        <div class="scores">
+            <div class="sc" data-v="1" onclick="score(this)"><span class="n">1</span><span class="l">NI</span></div>
+            <div class="sc" data-v="2" onclick="score(this)"><span class="n">2</span><span class="l">Emrg</span></div>
+            <div class="sc" data-v="3" onclick="score(this)"><span class="n">3</span><span class="l">Dev</span></div>
+            <div class="sc" data-v="4" onclick="score(this)"><span class="n">4</span><span class="l">Prof</span></div>
+            <div class="sc" data-v="5" onclick="score(this)"><span class="n">5</span><span class="l">Exm</span></div>
+        </div>
+        <div class="desc-toggle" onclick="toggleDesc(this)">&#9654; View rubric descriptors</div>
+        <div class="desc-body"><strong>1 &mdash; Needs Improvement:</strong> Very few or no students provide meaningful oral or written evidence to support their thinking. Students complete very little of the cognitive work during the lesson; the teacher completes all or almost all of the cognitive work. Students respond negatively to their peers' thinking, ideas, or answers. No students or very few try hard to complete challenging academic work. Students are engaged in discussion or written work for less than 35% of the lesson.<br><br><strong>2 &mdash; Emerging:</strong> Some students provide meaningful oral or written evidence to support their thinking. Students complete some of the cognitive work, but the teacher or a very small number of students complete most of it. Students do not respond to their peers' thinking or provide feedback. Some students try hard to complete challenging work. Students are engaged in discussion or written work for 35-40% of the lesson.<br><br><strong>3 &mdash; Developing:</strong> Most students provide meaningful oral or written evidence to support their thinking. Students complete an appropriately challenging amount of cognitive work given the focus of the lesson. Students respond to their peers' thinking, ideas or answers, and provide feedback. Most students try hard even if the work is challenging. Students are engaged in discussion or written work for at least 50% of the lesson.<br><br><strong>4 &mdash; Proficient:</strong> All or almost all students provide meaningful oral or written evidence to support their thinking. Students complete an appropriately challenging amount of cognitive work. Students respond to and build on their peers' thinking, ideas or answers. Students routinely provide constructive feedback and respond productively when a peer answers incorrectly. All or almost all students consistently try hard even if the work is challenging. Students are engaged in discussion or written work for more than 50% of the lesson.<br><br><strong>5 &mdash; Exemplary:</strong> All descriptors for Level 4 are met, and at least one of the following: Students are able to make inferences, draw conclusions, approach/solve problems in multiple ways. Students independently show enthusiasm and interest in taking on advanced or more challenging content.</div>
+    </div>
+
+    <!-- T5 -->
+    <div class="rub" id="r5">
+        <div class="rub-code">T5</div>
+        <div class="rub-q">Demonstration of Learning &mdash; Do all students demonstrate that they are learning?</div>
+        <div class="scores">
+            <div class="sc" data-v="1" onclick="score(this)"><span class="n">1</span><span class="l">NI</span></div>
+            <div class="sc" data-v="2" onclick="score(this)"><span class="n">2</span><span class="l">Emrg</span></div>
+            <div class="sc" data-v="3" onclick="score(this)"><span class="n">3</span><span class="l">Dev</span></div>
+            <div class="sc" data-v="4" onclick="score(this)"><span class="n">4</span><span class="l">Prof</span></div>
+            <div class="sc" data-v="5" onclick="score(this)"><span class="n">5</span><span class="l">Exm</span></div>
+        </div>
+        <div class="desc-toggle" onclick="toggleDesc(this)">&#9654; View rubric descriptors</div>
+        <div class="desc-body"><strong>1 &mdash; Needs Improvement:</strong> Questions, tasks or assessments do not yield data that allow the teacher to assess students' progress toward learning goals. Students have very few or no opportunities to express learning through academic writing and/or explanations using academic language. Very few or no students demonstrate how well they understand lesson content. Student responses, work and interactions demonstrate that most students are not on track to achieve learning goals.<br><br><strong>2 &mdash; Emerging:</strong> Questions, tasks or assessments yield data that only partially allow the teacher to assess progress. Students have few opportunities to express learning through academic writing. Some students demonstrate understanding through work and/or responses. Student responses demonstrate that some students are on track.<br><br><strong>3 &mdash; Developing:</strong> Questions, tasks or assessments yield data that allow the teacher to assess progress. Students have some opportunities to express learning through academic writing. Most students demonstrate understanding through work and/or responses. Most students are on track to achieve learning goals.<br><br><strong>4 &mdash; Proficient:</strong> Questions, tasks or assessments yield data that allow the teacher to assess progress and help pinpoint where understanding breaks down. Students have extensive opportunities to express learning through academic writing and/or explanations using academic language. All students demonstrate understanding through work and/or responses. All or almost all students are on track to achieve learning goals.<br><br><strong>5 &mdash; Exemplary:</strong> All descriptors for Level 4 are met, and at least one of the following: Students self-assess whether they have achieved the lesson objective and provide feedback to the teacher. Students monitor their own progress, identify their own errors and seek additional opportunities for practice.</div>
+    </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Feedback -->
+<div class="section">
+    <div class="section-title">Observation Feedback</div>
+
+    <div class="fb">
+        <div class="notes-label">See It / Name It: Success</div>
+        <textarea placeholder="What's working well in this classroom?"></textarea>
+    </div>
+    <div class="fb">
+        <div class="notes-label">See It / Name It: Area(s) of Growth</div>
+        <textarea placeholder="Where is there opportunity to grow?"></textarea>
+    </div>
+    <div class="fb">
+        <div class="notes-label">Do It: What did you practice?</div>
+        <textarea placeholder="What was practiced during the debrief?"></textarea>
+    </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Action Step -->
+<div class="section">
+    <div class="section-title">Action Step</div>
+    <div class="section-sub">Select a rubric area, then choose an action step from Get Better Faster</div>
+
+    <div style="margin-bottom:12px">
+        <select id="dimSelect" onchange="loadActionSteps(this.value)" style="width:100%;padding:12px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;color:#111827;outline:none;background:#fff;appearance:none;background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 fill=%27%239ca3af%27%3E%3Cpath d=%27M2 4l4 4 4-4%27/%3E%3C/svg%3E');background-repeat:no-repeat;background-position:right 12px center">
+            <option value="">Select rubric dimension...</option>
+            <option value="t1">T1 — On Task</option>
+            <option value="t2">T2 — Community of Learners</option>
+            <option value="t3">T3 — Essential Content</option>
+            <option value="t5">T5 — Demonstration of Learning</option>
+            <option value="t4">T4 — Cognitive Engagement</option>
+        </select>
+    </div>
+
+    <div id="actionStepsList"></div>
+
+    <div style="margin-top:12px">
+        <div class="notes-label">Custom Action Step (optional)</div>
+        <textarea placeholder="Or write your own action step..." style="min-height:60px"></textarea>
+    </div>
+</div>
+
+</div>
+
+<!-- Bottom -->
+<div class="bottom">
+    <button class="btn btn-out" onclick="alert('Draft saved')">Save Draft</button>
+    <button class="btn btn-pri" onclick="document.getElementById('done').style.display='flex'">Publish</button>
+</div>
+
+<!-- Success -->
+<div class="success" id="done">
+    <div class="success-box">
+        <div class="check"><svg width="28" height="28" fill="none" stroke="#059669" stroke-width="3"><path d="M7 14l5 5 10-10"/></svg></div>
+        <div style="font-size:20px;font-weight:700;margin-bottom:4px;">Published!</div>
+        <div style="font-size:14px;color:#6b7280;margin-bottom:20px;">Marcus Williams has been notified</div>
+        <button class="btn btn-pri" style="width:auto;padding:12px 32px" onclick="location.reload()">Done</button>
+    </div>
+</div>
+
+<script>
+// Multi-teacher
+function showAdd(){var s=document.getElementById('addSearch');s.style.display=s.style.display==='none'?'':'none';if(s.style.display!=='none')document.getElementById('addInput').focus()}
+function addT(n){var c=document.getElementById('addedTeachers');var id='c-'+n.replace(/\s/g,'');if(document.getElementById(id))return;var d=document.createElement('div');d.style.cssText='display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#f5f7fa;border-radius:8px;font-size:13px;font-weight:500';d.id=id;d.innerHTML=n+' <div onclick="this.parentElement.remove()" style="width:18px;height:18px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:#6b7280">&times;</div>';c.appendChild(d);document.getElementById('addSearch').style.display='none';document.getElementById('addInput').value=''}
+function filterAdd(q){document.querySelectorAll('.add-i').forEach(function(i){i.style.display=i.textContent.toLowerCase().includes(q.toLowerCase())?'':'none'})}
+
+// Scoring
+function score(el){
+    const card = el.closest('.rub');
+    card.querySelectorAll('.sc').forEach(s=>{
+        s.classList.remove('sel');
+        s.style.background=''; s.style.borderColor='';
+        s.querySelectorAll('.n,.l').forEach(t=>t.style.color='');
+    });
+    el.classList.add('sel');
+    const v = el.dataset.v;
+    const colors = {1:'#ef4444',2:'#f97316',3:'#eab308',4:'#22c55e',5:'#0ea5e9'};
+    el.style.background = colors[v]; el.style.borderColor = colors[v];
+    el.querySelectorAll('.n,.l').forEach(t=>t.style.color='#fff');
+    card.style.borderLeftColor = colors[v];
+}
+
+// Descriptor toggle
+function toggleDesc(el){
+    const body = el.nextElementSibling;
+    body.classList.toggle('open');
+    el.innerHTML = body.classList.contains('open') ? '&#9660; Hide descriptors' : '&#9654; View rubric descriptors';
+}
+
+// Get Better Faster Action Steps
+var GBF = {
+    t1: [
+        {cat:'Routines & Procedures',action:'Plan critical routines and procedures moment-by-moment',when:'Teacher does not have clear routines established',prompt:'"What is each step the teacher takes in this routine? What is the teacher doing and what are the students doing?"',rtc:'N/A'},
+        {cat:'Routines & Procedures',action:'Plan the roll-out for introducing the routine',when:'Routine is new for the students',prompt:'"What will be the most difficult parts for students to master? How will you model this effectively?"',rtc:'If model is ineffective: "Am I following your model effectively?"'},
+        {cat:'Routines & Procedures',action:'Do It Again & Cut It Short',when:"Students aren't performing a routine correctly",prompt:'"What are the keys to running a Do It Again effectively?"',rtc:'Non-verbal: Make a circle with your finger to cue Do It Again'},
+        {cat:'Strong Voice',action:'Square up and stand still',when:"Teacher's body language lacks leadership presence",prompt:'"What is the value in communicating leadership with our body language?"',rtc:'Non-verbal: shift body upward and arch shoulders'},
+        {cat:'Strong Voice',action:'Use formal register',when:"Teacher's tone lacks leadership presence",prompt:'"Imagine saying \'It\'s time to leave\' to three audiences. What\'s the value of the middle one?"',rtc:'Non-verbal: square up gesture + point to mouth'},
+        {cat:'Clear Directions',action:'Use MVP Directions',when:"Teacher's directions are unclear and use too many words",prompt:'"What happened when you asked students to ___? What caused the dip in behavior?"',rtc:'Non-verbal: sign MVP. Whisper: "When I say go, at a level zero..."'},
+        {cat:'Teacher Radar',action:'Perch and Be Seen Looking',when:"Students don't feel teacher is monitoring",prompt:'"How do the students know you are monitoring their behavior?"',rtc:'Non-verbal: Make gesture of Be Seen Looking'},
+        {cat:'Teacher Radar',action:'Scan Hot Spots',when:'Teacher is not noticing earliest non-compliance',prompt:'"At what moment do the first students begin to go off track? Which students are most often off task?"',rtc:'Hold hand out over a hot spot'},
+        {cat:'Teacher Radar',action:'Circulate the perimeter',when:'Teacher is stationary',prompt:'"Where did the off-task behavior start? Where were you standing?"',rtc:'Non-verbal: point to a corner where they should stand'},
+        {cat:'Pacing',action:'Time Yourself',when:'Lesson doesn\'t conform to time stamps',prompt:'"How much time did you want to spend on the I Do? What kept us from sticking?"',rtc:'Non-verbal: point at watch. Hand signal for minutes remaining'},
+        {cat:'Pacing',action:'Illusion of Speed',when:"Students don't have urgency",prompt:'"How could you challenge students to work with greater purpose?"',rtc:'Non-verbal: 5-4-3-2-1 with fingers'},
+        {cat:'Narrate the Positive',action:'Use a warm/strict voice',when:'Tone when addressing management is overly negative',prompt:'"How did the teacher get students to correct misbehaviors without being negative?"',rtc:'Non-verbal: index card with plus sign. Whisper: "Warm strict"'},
+        {cat:'Narrate the Positive',action:'Narrate the Positive X3',when:"Off-task students don't respond to clear directions",prompt:'"What does this teacher do after giving clear directions? How does that affect attention?"',rtc:'Whisper: "Narrate X3"'},
+        {cat:'Individual Correction',action:'Least-Invasive Intervention',when:'Corrections draw more attention than necessary',prompt:'"What is the advantage of starting with the least invasive intervention?"',rtc:'Non-verbal: point to off-task students. Whisper: "Use ___ intervention"'},
+        {cat:'Consequence',action:'Give a consequence',when:'Consequences are not being implemented',prompt:'"You gave clear directions, narrated X3, did non-verbal cues but students still off task. What could you do?"',rtc:'Non-verbal or whisper to implement consequence'},
+    ],
+    t2: [
+        {cat:'Kind Words & Empathy',action:'Explicitly teach words and actions of politeness',when:'Students are not using polite words',prompt:'"What words would you like students to use when interacting?"',rtc:'Non-verbal: Point to the poster'},
+        {cat:'Kind Words & Empathy',action:'Explicitly teach words and actions of apology',when:'Students are not apologizing',prompt:'"What words would you like students to use when they need to apologize?"',rtc:'Non-verbal: Point to the poster'},
+        {cat:'Kind Words & Empathy',action:'Teach response to consequences from teacher',when:'Students have unproductive arguments with teacher',prompt:'"When students have a conflict with you, how do you want them to respond?"',rtc:'Model: Remind student when they don\'t adhere'},
+        {cat:'Kind Words & Empathy',action:'Teach conflict resolution between students',when:'Students have unproductive arguments with each other',prompt:'"When students have a conflict, how do you want them to respond?"',rtc:'Model: Remind student when they don\'t adhere'},
+        {cat:'Kagan Strategies',action:'Model the routine for each new structure',when:'Students are confused during a structure',prompt:'"Watch me model the rollout. What did I do and say?"',rtc:'Model: Rollout of a Kagan structure for the teacher'},
+        {cat:'Kagan Strategies',action:'Implement class-building activities',when:'Teacher is not implementing class-building',prompt:'"What is the goal of class-building? What is holding you back?"',rtc:'N/A'},
+        {cat:'Kagan Strategies',action:'Use gambits at end of structures',when:'Teacher doesn\'t prompt kind words to partner',prompt:'"What is the purpose of using a gambit at the end of a Kagan structure?"',rtc:'Non-verbal: Point to gambit poster. Whisper: "Use your gambits!"'},
+    ],
+    t3: [
+        {cat:'Lesson Internalization',action:'Script exemplar Exit Ticket response',when:'Teacher struggles to identify mastery',prompt:'"What do you want students to write on the exit ticket? What exactly?"',rtc:'N/A'},
+        {cat:'Lesson Internalization',action:'ID key points and must-dos',when:'Teacher does not address key points',prompt:'"What are the most important must-do parts for this lesson?"',rtc:'Whisper: "How does this connect to our key point of ___?"'},
+        {cat:'Lesson Internalization',action:'Script exemplar answers (Right is Right)',when:'Teacher struggles to evaluate responses in-the-moment',prompt:'"What is the completely right answer? What answers would be only partially correct?"',rtc:'N/A'},
+        {cat:'Lesson Internalization',action:'Plan engagement strategies',when:'Teacher does not plan for specific pedagogical moves',prompt:'"What are the specific ways you want students engaged?"',rtc:'Whisper: Prompt for using an engagement strategy'},
+        {cat:'Lesson Internalization',action:'Plan accommodations/supplements',when:'Teacher does not plan specific accommodations',prompt:'"What are the specific accommodations and modifications?"',rtc:'Whisper: Prompt for using a specific acc/mod'},
+        {cat:'Lesson Internalization',action:'Key moments to address misconceptions',when:'Teacher struggles to check understanding',prompt:'"What key part did students not understand? Why? What was the misconception?"',rtc:'N/A'},
+    ],
+    t5: [
+        {cat:'Active Monitoring',action:'ActMo 1 — Monitoring pathway for On Task Start',when:"Teacher isn't checking if students are starting work",prompt:'"What is the purpose of monitoring? Which 2-3 students do you approach first?"',rtc:'Cue teacher to monitor lap for On Task Start'},
+        {cat:'Active Monitoring',action:'ActMo 2 — Monitor quality of student work',when:'Teacher does not see patterns in answers',prompt:'"What is the purpose of active monitoring during work time?"',rtc:'Whisper: Share patterns you\'re seeing in responses'},
+        {cat:'Active Monitoring',action:'ActMo 3 — Mark up student work and give feedback',when:'Few students getting explicit feedback',prompt:'"What is the student experiencing when you\'re monitoring? How many know if they\'re on track?"',rtc:'Whisper: Prompt lap for feedback. Model.'},
+        {cat:'Active Monitoring',action:'ActMo 4 — Ensure students apply feedback',when:'Few students using feedback to adjust work',prompt:'"Once you\'ve written feedback, how do you know they\'ve made an adjustment?"',rtc:'Whisper: Prompt lap for response to feedback'},
+        {cat:'Check for Understanding',action:'Poll the Room',when:'Teacher moves ahead without knowing who comprehends',prompt:'"What is the purpose of polling the room? When would be the best moments?"',rtc:'Intervene: Poll the room'},
+        {cat:'Check for Understanding',action:'Data-Driven Cold Call',when:"Teacher doesn't call on students who most need practice",prompt:'"Which students are ideal to call on for each question?"',rtc:'Whisper: "Call on a [high/medium/low] student"'},
+        {cat:'DDI',action:'Roll back the answer',when:"Students aren't given a chance to correct errors",prompt:'"What do you want students to say? Where will they struggle?"',rtc:'Non-verbal: rolling/cranking motion'},
+        {cat:'DDI',action:'Break it down / content-specific prompts',when:'After incorrect response, teacher moves on or repeats question',prompt:'"What are the key components the student must know to answer correctly?"',rtc:'Signal when best move is to break it down. Model if needed.'},
+        {cat:'DDI',action:'Close the loop',when:"After incorrect answer, teacher doesn't return to student",prompt:'"When the student gave the incorrect answer, what was the missed opportunity?"',rtc:'Whisper: "Come back to x student to make sure they understand"'},
+    ],
+    t4: [
+        {cat:'Independent Practice',action:'Plan moments for Everybody Writes',when:'Students lack opportunities to write before discussing',prompt:'"What are the limitations of discussion for assessing every student?"',rtc:'Non-verbal: write in the air. Intervene: "Everybody write: [key question]"'},
+        {cat:'Engaging All Students',action:'Call on all students',when:'Teacher tends to call on same few students',prompt:'"Let\'s look at footage — which students are you calling on? Which aren\'t?"',rtc:'Non-verbal: point to ideal student to call on'},
+        {cat:'Engaging All Students',action:'Rule of Thirds (cold call, taking hands, choral response)',when:'Teacher over-relies on one technique',prompt:'"When is the best moment to use cold call vs. taking hands vs. choral response?"',rtc:'Non-verbal: cue for cold call, choral response, all hands'},
+    ],
+};
+
+function loadActionSteps(dim) {
+    var container = document.getElementById('actionStepsList');
+    if (!dim || !GBF[dim]) { container.innerHTML = ''; return; }
+    var steps = GBF[dim];
+    container.innerHTML = steps.map(function(s) {
+        return '<div class="act" onclick="this.classList.toggle(\'sel\')">' +
+            '<div class="act-cat">' + s.cat + '</div>' +
+            '<div class="act-name">' + s.action + '</div>' +
+            '<div style="font-size:11px;color:#9ca3af;margin-top:3px">When: ' + s.when + '</div>' +
+            '<div class="act-prompt">' + s.prompt + '</div>' +
+            '<div class="act-rtc">RTC Cue: ' + s.rtc + '</div>' +
+        '</div>';
+    }).join('');
+}
+
+// Recording
+let isRec=false, secs=0, intv;
+function toggleRec(){
+    isRec=!isRec;
+    const bar=document.getElementById('recBar');
+    const time=document.getElementById('recTime');
+    const label=document.getElementById('recLabel');
+    if(isRec){
+        bar.classList.add('on');
+        label.textContent='Recording...';
+        intv=setInterval(()=>{
+            secs++;
+            time.textContent=String(Math.floor(secs/60)).padStart(2,'0')+':'+String(secs%60).padStart(2,'0');
+        },1000);
+    }else{
+        bar.classList.remove('on');
+        label.textContent='Paused — tap to resume';
+        clearInterval(intv);
+    }
+}
+</script>
+</body>
+</html>

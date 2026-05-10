@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Celebrate — ObservationPoint</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#f5f7fa;color:#111827;-webkit-font-smoothing:antialiased}
+.nav{position:sticky;top:0;z-index:100;background:#002f60;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.nav-back{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.nav-title{font-size:15px;font-weight:700;color:#fff;flex:1}
+.nav-title span{color:#e47727}
+.teacher-banner{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fff;border-bottom:1px solid #e5e7eb}
+.tb-av{width:40px;height:40px;border-radius:10px;background:#002f60;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700}
+.tb-name{font-size:15px;font-weight:600}
+.tb-meta{font-size:12px;color:#6b7280}
+.tb-badge{margin-left:auto;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;background:#dcfce7;color:#059669}
+.content{padding:16px 16px 120px}
+.section-title{font-size:16px;font-weight:700;margin-bottom:4px}
+.section-sub{font-size:12px;color:#9ca3af;margin-bottom:14px}
+.card{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px;margin-bottom:12px}
+.label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;margin-bottom:6px}
+textarea{width:100%;padding:12px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;color:#111827;line-height:1.6;resize:vertical;outline:none;min-height:120px}
+textarea:focus{border-color:#e47727}
+textarea::placeholder{color:#9ca3af}
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.tag{padding:8px 14px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:1.5px solid #e5e7eb;background:#fff;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.tag:active{transform:scale(.95)}
+.tag.sel{background:#059669;color:#fff;border-color:#059669}
+.commitment-cards{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.commitment{padding:10px 14px;border-radius:10px;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;display:flex;align-items:center;gap:8px}
+.commitment:active{transform:scale(.98)}
+.commitment.sel{background:#f0fdf4;border-color:#059669;color:#059669}
+.commitment .dot{width:8px;height:8px;border-radius:50%;border:2px solid #d1d5db;flex-shrink:0;transition:all .15s}
+.commitment.sel .dot{background:#059669;border-color:#059669}
+.visibility{display:flex;gap:8px;margin-top:8px}
+.vis-btn{flex:1;padding:12px;border-radius:10px;border:1.5px solid #e5e7eb;background:#fff;text-align:center;font-size:13px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;color:#6b7280;transition:all .15s}
+.vis-btn:active{transform:scale(.95)}
+.vis-btn.sel{background:#002f60;border-color:#002f60;color:#fff}
+.bottom{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e7eb;padding:10px 16px;padding-bottom:max(10px,env(safe-area-inset-bottom));z-index:100}
+.btn{width:100%;padding:15px;border-radius:12px;font-size:14px;font-weight:600;text-align:center;cursor:pointer;font-family:'Inter',sans-serif;border:none;background:#059669;color:#fff}
+.btn:active{transform:scale(.97)}
+.success{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(6px);z-index:200;align-items:center;justify-content:center}
+.success-box{background:#fff;border-radius:20px;padding:36px 28px;text-align:center;margin:16px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.success-icon{font-size:48px;margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+    <div class="nav-back" onclick="history.back()"><svg width="18" height="18" fill="none" stroke="white" stroke-width="2"><path d="M15 9H3m0 0l5-5M3 9l5 5"/></svg></div>
+    <div class="nav-title">Observation<span>Point</span></div>
+</nav>
+
+<div class="teacher-banner">
+    <div class="tb-av">MW</div>
+    <div><div class="tb-name">Marcus Williams</div><div class="tb-meta">Samuel J. Green &middot; 5th Grade Math</div></div>
+    <div class="tb-badge">Celebrate</div>
+</div>
+<div class="multi-teachers" id="multiTeachers">
+    <div class="added-teachers" id="addedTeachers"></div>
+    <div class="add-teacher-btn" onclick="showAddTeacher()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 1v12M1 7h12"/></svg>
+        Add another teacher
+    </div>
+    <div class="add-teacher-search" id="addSearch" style="display:none">
+        <input type="text" class="add-search-input" id="addSearchInput" placeholder="Search name..." oninput="filterAdd(this.value)">
+        <div class="add-results" id="addResults">
+            <div class="add-item" onclick="addTeacher('Keisha Brown','Langston Hughes','3rd Grade ELA')">Keisha Brown <span>Langston Hughes</span></div>
+            <div class="add-item" onclick="addTeacher('David Chen','Arthur Ashe','7th Grade Science')">David Chen <span>Arthur Ashe</span></div>
+            <div class="add-item" onclick="addTeacher('Amara Johnson','Live Oak','1st Grade')">Amara Johnson <span>Live Oak</span></div>
+            <div class="add-item" onclick="addTeacher('Marie Thibodaux','Arthur Ashe','PreK-4')">Marie Thibodaux <span>Arthur Ashe</span></div>
+            <div class="add-item" onclick="addTeacher('Robert Taylor','GW Carver','10th English')">Robert Taylor <span>GW Carver</span></div>
+        </div>
+    </div>
+</div>
+
+<div class="content">
+
+    <div class="section-title">Celebrate / Praise</div>
+    <div class="section-sub">Recognize a win. Teachers see these on their profile.</div>
+
+    <div class="card">
+        <div class="label">What are you celebrating?</div>
+        <textarea placeholder="What did you see? Be specific — this goes directly to the teacher." autofocus></textarea>
+    </div>
+
+    <div class="card">
+        <div class="label">Linked to FLS Commitment (optional)</div>
+        <div class="commitment-cards">
+            <div class="commitment" onclick="this.classList.toggle('sel')"><div class="dot"></div>We Keep Learning</div>
+            <div class="commitment" onclick="this.classList.toggle('sel')"><div class="dot"></div>We Work Together</div>
+            <div class="commitment" onclick="this.classList.toggle('sel')"><div class="dot"></div>We are Helpful</div>
+            <div class="commitment" onclick="this.classList.toggle('sel')"><div class="dot"></div>We are the Safekeepers</div>
+            <div class="commitment" onclick="this.classList.toggle('sel')"><div class="dot"></div>We Share Joy</div>
+            <div class="commitment" onclick="this.classList.toggle('sel')"><div class="dot"></div>We Show Results</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="label">Tags</div>
+        <div class="tags">
+            <div class="tag" onclick="this.classList.toggle('sel')">Instruction</div>
+            <div class="tag" onclick="this.classList.toggle('sel')">Culture</div>
+            <div class="tag" onclick="this.classList.toggle('sel')">Leadership</div>
+            <div class="tag" onclick="this.classList.toggle('sel')">Collaboration</div>
+            <div class="tag" onclick="this.classList.toggle('sel')">Growth</div>
+            <div class="tag" onclick="this.classList.toggle('sel')">Above & Beyond</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="label">Share with</div>
+        <div class="visibility">
+            <div class="vis-btn sel" onclick="visSel(this)">Teacher Only</div>
+            <div class="vis-btn" onclick="visSel(this)">Team</div>
+            <div class="vis-btn" onclick="visSel(this)">School</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="label">Public Recognition</div>
+        <div style="font-size:12px;color:#6b7280;margin-bottom:10px;">Track where this shout-out was shared publicly</div>
+        <div class="shout-options">
+            <div class="shout-item">
+                <label class="shout-opt"><input type="checkbox" onchange="toggleNote(this)"> <span>Newsletter</span></label>
+                <input class="shout-note" type="text" placeholder="Add context..." style="display:none">
+            </div>
+            <div class="shout-item">
+                <label class="shout-opt"><input type="checkbox" onchange="toggleNote(this)"> <span>This Week at FirstLine (TWAF)</span></label>
+                <input class="shout-note" type="text" placeholder="Add context..." style="display:none">
+            </div>
+            <div class="shout-item">
+                <label class="shout-opt"><input type="checkbox" onchange="toggleNote(this)"> <span>Huddle Shout Out</span></label>
+                <input class="shout-note" type="text" placeholder="Add context..." style="display:none">
+            </div>
+            <div class="shout-item">
+                <label class="shout-opt"><input type="checkbox" onchange="toggleNote(this)"> <span>Other</span></label>
+                <input class="shout-note" type="text" placeholder="Where and why?" style="display:none">
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="background:#f0fdf4;border:1.5px solid #bbf7d0;">
+        <div style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="document.getElementById('noteArea').style.display=document.getElementById('noteArea').style.display==='none'?'':'none'">
+            <div style="width:32px;height:32px;border-radius:8px;background:#059669;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <svg width="16" height="16" fill="none" stroke="white" stroke-width="2"><path d="M4 14l2-2h7a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v9z"/></svg>
+            </div>
+            <div>
+                <div style="font-size:14px;font-weight:600;color:#059669;">Send them a note now!</div>
+                <div style="font-size:11px;color:#6b7280;">Write a personal message directly to the teacher</div>
+            </div>
+        </div>
+        <div id="noteArea" style="display:none;margin-top:12px;">
+            <textarea placeholder="Hey Marcus — just wanted you to know..." style="min-height:80px;border-color:#bbf7d0;"></textarea>
+        </div>
+    </div>
+
+</div>
+
+<div class="bottom">
+    <button class="btn" onclick="document.getElementById('done').style.display='flex'">Send Celebration</button>
+</div>
+
+<div class="success" id="done">
+    <div class="success-box">
+        <div class="success-icon">&#127881;</div>
+        <div style="font-size:20px;font-weight:700;margin-bottom:4px;">Celebration Sent!</div>
+        <div style="font-size:14px;color:#6b7280;margin-bottom:20px;">Marcus Williams has been notified</div>
+        <button class="btn" style="width:auto;padding:12px 32px" onclick="location.reload()">Done</button>
+    </div>
+</div>
+
+<style>
+.multi-teachers{padding:8px 16px 12px;background:#fff;border-bottom:1px solid #e5e7eb}
+.added-teachers{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.teacher-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#f5f7fa;border-radius:8px;font-size:13px;font-weight:500}
+.teacher-chip .remove{width:18px;height:18px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:#6b7280;line-height:1}
+.teacher-chip .remove:hover{background:#dc2626;color:#fff}
+.add-teacher-btn{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#e47727;cursor:pointer;padding:6px 0}
+.add-teacher-btn:active{opacity:.7}
+.add-teacher-search{margin-top:6px}
+.add-search-input{width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;outline:none}
+.add-search-input:focus{border-color:#e47727}
+.add-results{max-height:160px;overflow-y:auto;margin-top:4px}
+.add-item{padding:10px;font-size:13px;cursor:pointer;border-radius:6px;transition:background .1s}
+.add-item:active{background:#f5f7fa}
+.add-item span{color:#9ca3af;margin-left:6px;font-size:12px}
+.shout-options{display:flex;flex-direction:column;gap:4px}
+.shout-item{display:flex;flex-direction:column;gap:6px}
+.shout-opt{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;padding:10px 0;cursor:pointer}
+.shout-opt input{width:18px;height:18px;accent-color:#059669}
+.shout-note{width:100%;padding:8px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;color:#111827;outline:none;margin-left:26px;width:calc(100% - 26px)}
+.shout-note:focus{border-color:#e47727}
+</style>
+<script>
+function visSel(el){el.closest('.visibility').querySelectorAll('.vis-btn').forEach(function(b){b.classList.remove('sel')});el.classList.add('sel')}
+function showAddTeacher(){
+    var s=document.getElementById('addSearch');
+    s.style.display=s.style.display==='none'?'':'none';
+    if(s.style.display!=='none')document.getElementById('addSearchInput').focus();
+}
+function addTeacher(name,school,role){
+    var container=document.getElementById('addedTeachers');
+    var id='chip-'+name.replace(/\s/g,'');
+    if(document.getElementById(id))return; // already added
+    var chip=document.createElement('div');
+    chip.className='teacher-chip';
+    chip.id=id;
+    chip.innerHTML=name+' <div class="remove" onclick="this.parentElement.remove()">&times;</div>';
+    container.appendChild(chip);
+    document.getElementById('addSearch').style.display='none';
+    document.getElementById('addSearchInput').value='';
+}
+function filterAdd(q){
+    var items=document.querySelectorAll('.add-item');
+    items.forEach(function(i){i.style.display=i.textContent.toLowerCase().includes(q.toLowerCase())?'':'none'});
+}
+function toggleNote(checkbox){
+    var note = checkbox.closest('.shout-item').querySelector('.shout-note');
+    if(checkbox.querySelector('input').checked){
+        note.style.display='';
+        note.focus();
+    } else {
+        note.style.display='none';
+        note.value='';
+    }
+}
+</script>
+</body>
+</html>

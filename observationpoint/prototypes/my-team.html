@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>My Team — ObservationPoint</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#f5f7fa;color:#111827;-webkit-font-smoothing:antialiased;padding-bottom:70px}
+.nav{position:sticky;top:0;z-index:100;background:#002f60;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.nav-back{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.nav-title{font-size:15px;font-weight:700;color:#fff;flex:1}.nav-title span{color:#e47727}
+.content{padding:16px 16px 40px}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.stat{background:#fff;border-radius:10px;padding:10px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.stat-val{font-size:22px;font-weight:800;color:#002f60}.stat-label{font-size:9px;color:#9ca3af;text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+
+.search{width:100%;padding:10px 10px 10px 36px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:13px;font-family:'Inter',sans-serif;outline:none;margin-bottom:12px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Ccircle cx='7' cy='7' r='4.5'/%3E%3Cpath d='m11 11 3 3'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:10px center}
+.search:focus{border-color:#e47727}
+
+.filters{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px}
+.filter-chip{padding:7px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer;white-space:nowrap;font-family:'Inter',sans-serif}
+.filter-chip.active{background:#002f60;color:#fff;border-color:#002f60}
+
+.staff-card{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:12px;margin-bottom:8px;cursor:pointer;text-decoration:none;color:inherit;display:block}
+.staff-card:active{transform:scale(.98)}
+.staff-top{display:flex;align-items:center;gap:10px}
+.staff-av{width:40px;height:40px;border-radius:10px;background:#002f60;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
+.staff-name{font-size:14px;font-weight:600}
+.staff-meta{font-size:11px;color:#9ca3af}
+.staff-right{margin-left:auto;text-align:right;flex-shrink:0}
+.staff-count{font-size:16px;font-weight:800;color:#002f60}
+.staff-count-label{font-size:9px;color:#9ca3af;text-transform:uppercase}
+.staff-types{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+.staff-type{font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:#f3f4f6;color:#6b7280}
+.staff-type.has{background:#dbeafe;color:#2563eb}
+.staff-date{font-size:11px;color:#9ca3af;margin-top:6px}
+
+.loading{padding:60px 16px;text-align:center;color:#9ca3af;font-size:13px}
+.empty{padding:40px 16px;text-align:center;color:#9ca3af;font-size:14px;background:#fff;border-radius:12px}
+
+/* Worth a look strip */
+.wal{background:linear-gradient(135deg,#002f60,#1e40af);color:#fff;border-radius:14px;padding:14px 16px;margin-bottom:14px;box-shadow:0 4px 14px rgba(0,47,96,.15)}
+.wal-cap{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#fbbe82;margin-bottom:8px}
+.wal-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.1);font-size:12px;line-height:1.4}
+.wal-row:last-child{border-bottom:none}
+.wal-ic{width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;font-weight:800}
+.wal-ic.up{color:#86efac}
+.wal-ic.alert{color:#fbbe82}
+.wal-ic.due{color:#fca5a5}
+.wal-body{flex:1;color:rgba(255,255,255,.9)}
+.wal-body b{color:#fff;font-weight:700}
+.wal-ar{color:rgba(255,255,255,.4);font-size:14px}
+
+/* Bottom nav + AI panel */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:#fff;border-top:1px solid #e5e7eb;display:flex;padding:8px 8px 10px;gap:2px;box-shadow:0 -2px 10px rgba(0,0,0,.05)}
+.bn-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 2px;border-radius:10px;text-decoration:none;color:#9ca3af;cursor:pointer;font-family:inherit;background:none;border:0}
+.bn-btn.active{color:#002f60}
+.bn-btn.ai.active{color:#e47727}
+.bn-ic-n{width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800}
+.bn-btn.ai .bn-ic-n{color:#fbbe82}
+.bn-btn.ai.active .bn-ic-n{color:#e47727}
+.bn-lbl{font-size:10px;font-weight:700;letter-spacing:.02em}
+.ai-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;opacity:0;pointer-events:none;transition:opacity .22s}
+.ai-backdrop.open{opacity:1;pointer-events:auto}
+.ai-panel{position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:22px 22px 0 0;max-height:88vh;z-index:901;transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.8,.3,1);box-shadow:0 -10px 32px rgba(0,0,0,.22);display:flex;flex-direction:column}
+.ai-panel.open{transform:translateY(0)}
+.ai-handle{width:44px;height:4px;background:#e5e7eb;border-radius:3px;margin:10px auto 0}
+.ai-head{padding:16px 18px 14px;background:linear-gradient(135deg,#002f60,#1e40af);color:#fff;display:flex;align-items:center;gap:10px;border-radius:22px 22px 0 0;margin-top:-14px;padding-top:22px}
+.ai-badge{width:32px;height:32px;border-radius:10px;background:rgba(251,190,130,.2);color:#fbbe82;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800}
+.ai-title-wrap{flex:1}
+.ai-t{font-size:14px;font-weight:800}
+.ai-ctx{font-size:11px;color:rgba(255,255,255,.7);margin-top:1px}
+.ai-x{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:#fff}
+.ai-body-x{flex:1;overflow-y:auto;padding:14px 18px}
+.ai-intro{font-size:12px;color:#6b7280;line-height:1.5;margin-bottom:12px}
+.ai-sug{display:flex;gap:10px;padding:11px 13px;border-radius:10px;background:#f5f7fa;cursor:pointer;margin-bottom:6px;align-items:flex-start;border:1px solid transparent}
+.ai-sug:hover{background:#eef2f7;border-color:#e5e7eb}
+.ai-sug-q{flex:1;font-size:13px;color:#111827;font-weight:600;line-height:1.4}
+.ai-sug-ar{color:#e47727;font-weight:800;font-size:13px}
+.ai-input-bar{padding:10px 14px 14px;border-top:1px solid #e5e7eb;display:flex;gap:6px;background:#fff}
+.ai-input{flex:1;border:1px solid #e5e7eb;outline:0;padding:10px 14px;border-radius:20px;font-family:inherit;font-size:13px;background:#f5f7fa}
+.ai-input:focus{background:#fff;border-color:#002f60}
+.ai-send{padding:10px 16px;background:#002f60;color:#fff;border:0;border-radius:20px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.ai-msg{margin-bottom:10px}
+.ai-msg.user{max-width:85%;background:#002f60;color:#fff;padding:9px 13px;border-radius:14px 14px 3px 14px;font-size:13px;line-height:1.4;margin-left:auto}
+.ai-ans{background:#f5f7fa;border-radius:3px 14px 14px 14px;padding:11px 13px;font-size:13px;line-height:1.5;color:#111827}
+.ai-ans b{color:#002f60}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+    <div class="nav-back" onclick="location.href='home-updated.html'"><svg width="18" height="18" fill="none" stroke="white" stroke-width="2"><path d="M15 9H3m0 0l5-5M3 9l5 5"/></svg></div>
+    <div class="nav-title">My Team</div>
+</nav>
+
+<div id="loading" class="loading">Loading team...</div>
+
+<div class="content" id="app" style="display:none">
+    <!-- Worth a look today -->
+    <div class="wal">
+        <div class="wal-cap">✦ Worth a look today</div>
+        <a class="wal-row" href="profile-fundamentals-trend.html?teacher=marcus.williams" style="text-decoration:none">
+            <div class="wal-ic up">↑</div>
+            <div class="wal-body"><b>Marcus Williams:</b> on-task 62% → 89% · biggest gain on your team</div>
+            <div class="wal-ar">›</div>
+        </a>
+        <a class="wal-row" href="#" style="text-decoration:none">
+            <div class="wal-ic alert">!</div>
+            <div class="wal-body"><b>L. Green</b> — no touchpoint in 21 days</div>
+            <div class="wal-ar">›</div>
+        </a>
+        <a class="wal-row" href="#" style="text-decoration:none">
+            <div class="wal-ic due">⏱</div>
+            <div class="wal-body"><b>3 teachers</b> have PMAP due before Nov 19</div>
+            <div class="wal-ar">›</div>
+        </a>
+    </div>
+
+    <div class="stats">
+        <div class="stat"><div class="stat-val" id="sStaff">—</div><div class="stat-label">Staff</div></div>
+        <div class="stat"><div class="stat-val" id="sTPs">—</div><div class="stat-label">TouchPoints</div></div>
+        <div class="stat"><div class="stat-val" id="sAvg">—</div><div class="stat-label">Avg / Person</div></div>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:12px">
+        <button class="filter-chip active" id="viewDirect" onclick="setView('direct')">My Direct Reports</button>
+        <button class="filter-chip" id="viewAll" onclick="setView('all')">All Staff</button>
+    </div>
+    <input class="search" type="text" placeholder="Search staff..." oninput="filterStaff(this.value)">
+    <div class="filters" id="filters"></div>
+    <div id="staffList"></div>
+</div>
+
+<!-- Bottom nav -->
+<nav class="bottom-nav">
+    <a class="bn-btn active" href="my-team.html"><div class="bn-ic-n">&#128101;</div><div class="bn-lbl">Team</div></a>
+    <a class="bn-btn" href="touchpoint.html"><div class="bn-ic-n">&#43;</div><div class="bn-lbl">Touchpoint</div></a>
+    <a class="bn-btn" href="network-trends.html"><div class="bn-ic-n">&#128202;</div><div class="bn-lbl">Network</div></a>
+    <button class="bn-btn ai" onclick="openAI()"><div class="bn-ic-n">&#10022;</div><div class="bn-lbl">Ask</div></button>
+</nav>
+
+<!-- AI inline panel -->
+<div class="ai-backdrop" id="aiBd" onclick="closeAI()"></div>
+<div class="ai-panel" id="aiPanel">
+    <div class="ai-handle"></div>
+    <div class="ai-head">
+        <div class="ai-badge">&#10022;</div>
+        <div class="ai-title-wrap">
+            <div class="ai-t">Ask ObservationPoint</div>
+            <div class="ai-ctx">Scoped to your team · 12 teachers</div>
+        </div>
+        <div class="ai-x" onclick="closeAI()">×</div>
+    </div>
+    <div class="ai-body-x" id="aiBody">
+        <div class="ai-intro">Ask about your team — or anything else. Input is open.</div>
+        <div class="ai-sug" onclick="askAI('Who hasn\'t been observed in 30+ days?')"><div class="ai-sug-q">Who hasn't been observed in 30+ days?</div><div class="ai-sug-ar">↑</div></div>
+        <div class="ai-sug" onclick="askAI('Who\'s improved the most this year?')"><div class="ai-sug-q">Who's improved the most this year?</div><div class="ai-sug-ar">↑</div></div>
+        <div class="ai-sug" onclick="askAI('What\'s the team\'s lowest-scoring dimension?')"><div class="ai-sug-q">What's the team's lowest-scoring dimension?</div><div class="ai-sug-ar">↑</div></div>
+    </div>
+    <div class="ai-input-bar">
+        <input class="ai-input" id="aiInput" placeholder="Ask anything…" onkeydown="if(event.key==='Enter')sendAI()">
+        <button class="ai-send" onclick="sendAI()">↑</button>
+    </div>
+</div>
+
+<script>
+function openAI(){document.getElementById('aiPanel').classList.add('open');document.getElementById('aiBd').classList.add('open');document.body.style.overflow='hidden';document.querySelector('.bn-btn.ai').classList.add('active');}
+function closeAI(){document.getElementById('aiPanel').classList.remove('open');document.getElementById('aiBd').classList.remove('open');document.body.style.overflow='';document.querySelector('.bn-btn.ai').classList.remove('active');}
+function askAI(q){const body=document.getElementById('aiBody');const u=document.createElement('div');u.className='ai-msg user';u.textContent=q;body.appendChild(u);setTimeout(()=>{const m=document.createElement('div');m.className='ai-msg';m.innerHTML='<div class="ai-ans">I\'d answer that live from your data. This prototype shows the pattern.</div>';body.appendChild(m);body.scrollTop=body.scrollHeight;},500);document.getElementById('aiInput').value='';body.scrollTop=body.scrollHeight;}
+function sendAI(){const v=document.getElementById('aiInput').value.trim();if(v)askAI(v);}
+
+function initials(name){
+    const p = (name||'').trim().split(/\s+/);
+    return ((p[0]||'')[0]+(p[1]?p[1][0]:'')).toUpperCase()||'—';
+}
+
+function daysSince(dateStr){
+    if(!dateStr) return null;
+    return Math.floor((new Date() - new Date(dateStr))/(1000*60*60*24));
+}
+
+function renderCard(s){
+    const days = daysSince(s.last_touchpoint_date);
+    const daysText = days !== null ? `Last touchpoint ${days} day${days===1?'':'s'} ago` : 'No touchpoints yet';
+
+    const types = [];
+    if(s.observation_count) types.push(`<span class="staff-type has">${s.observation_count} Obs</span>`);
+    if(s.pmap_count) types.push(`<span class="staff-type has">${s.pmap_count} PMAP</span>`);
+    if(s.sr_count) types.push(`<span class="staff-type has">${s.sr_count} SR</span>`);
+    if(s.feedback_count) types.push(`<span class="staff-type has">${s.feedback_count} Feedback</span>`);
+    if(s.meeting_count) types.push(`<span class="staff-type has">${s.meeting_count} Meeting</span>`);
+    if(!types.length) types.push('<span class="staff-type">No touchpoints</span>');
+
+    return `
+    <a class="staff-card" href="profile-fundamentals-trend.html?teacher=${encodeURIComponent(s.email)}" data-school="${s.school}" data-function="${s.job_function}">
+        <div class="staff-top">
+            <div class="staff-av">${initials(s.name)}</div>
+            <div>
+                <div class="staff-name">${s.name}</div>
+                <div class="staff-meta">${s.job_title||''} · ${s.school||''}</div>
+            </div>
+            <div class="staff-right">
+                <div class="staff-count">${s.touchpoint_count}</div>
+                <div class="staff-count-label">touchpoints</div>
+            </div>
+        </div>
+        <div class="staff-types">${types.join('')}</div>
+        <div class="staff-date">${daysText}</div>
+    </a>`;
+}
+
+let currentView = 'direct';
+
+function setView(view){
+    currentView = view;
+    document.getElementById('viewDirect').classList.toggle('active', view==='direct');
+    document.getElementById('viewAll').classList.toggle('active', view==='all');
+    document.getElementById('staffList').innerHTML = '<div class="loading">Loading...</div>';
+    load();
+}
+
+const DEMO_STAFF = [
+    {email:'marcus.williams@demo.local',name:'Marcus Williams',school:'Samuel J. Green',job_title:'Teacher',job_function:'Teacher',touchpoint_count:27,obs_count:8,pmap_count:3,fund_count:6,sr_count:3,meeting_count:5,days_since_last:1},
+    {email:'alexis.rivera@demo.local',name:'Alexis Rivera',school:'Samuel J. Green',job_title:'Teacher',job_function:'Teacher',touchpoint_count:22,obs_count:7,pmap_count:3,fund_count:5,sr_count:3,meeting_count:3,days_since_last:3},
+    {email:'lenny.green@demo.local',name:'Lenny Green',school:'Samuel J. Green',job_title:'Teacher',job_function:'Teacher',touchpoint_count:16,obs_count:6,pmap_count:2,fund_count:4,sr_count:2,meeting_count:2,days_since_last:8},
+    {email:'kim.thompson@demo.local',name:'Kim Thompson',school:'Samuel J. Green',job_title:'Teacher · K',job_function:'Teacher',touchpoint_count:19,obs_count:6,pmap_count:2,fund_count:5,sr_count:3,meeting_count:3,days_since_last:2},
+    {email:'jada.watson@demo.local',name:'Jada Watson',school:'Samuel J. Green',job_title:'Teacher · 2nd',job_function:'Teacher',touchpoint_count:12,obs_count:4,pmap_count:2,fund_count:3,sr_count:2,meeting_count:1,days_since_last:14},
+    {email:'derek.chen@demo.local',name:'Derek Chen',school:'Samuel J. Green',job_title:'Teacher · 4th',job_function:'Teacher',touchpoint_count:18,obs_count:6,pmap_count:2,fund_count:4,sr_count:3,meeting_count:3,days_since_last:5},
+    {email:'sasha.patel@demo.local',name:'Sasha Patel',school:'Samuel J. Green',job_title:'Teacher · PreK',job_function:'Teacher',touchpoint_count:14,obs_count:5,pmap_count:2,fund_count:3,sr_count:2,meeting_count:2,days_since_last:11},
+];
+
+function useDemo(){ return location.hostname.endsWith('.github.io') || location.protocol === 'file:'; }
+
+async function load(){
+    try {
+        // On GitHub Pages or local file, use demo data
+        if(useDemo()){
+            renderFromData({staff: DEMO_STAFF});
+            return;
+        }
+        const r = await fetch(`/api/my-team?view=${currentView}`);
+        if(r.status === 401 || r.status === 403){
+            // API not available — fall back to demo
+            renderFromData({staff: DEMO_STAFF});
+            return;
+        }
+        if(!r.ok) throw new Error(r.status);
+        const d = await r.json();
+        const staff = d.staff;
+
+        if(!staff.length){
+            document.getElementById('loading').style.display='none';
+            document.getElementById('app').style.display='';
+            document.getElementById('staffList').innerHTML='<div class="empty">No direct reports found</div>';
+            return;
+        }
+
+        let totalTPs = 0;
+        const schoolSet = new Set();
+        const fnSet = new Set();
+        staff.forEach(s => {
+            totalTPs += s.touchpoint_count;
+            if(s.school) schoolSet.add(s.school);
+            if(s.job_function) fnSet.add(s.job_function);
+        });
+
+        document.getElementById('sStaff').textContent = staff.length;
+        document.getElementById('sTPs').textContent = totalTPs;
+        document.getElementById('sAvg').textContent = staff.length ? (totalTPs/staff.length).toFixed(1) : '—';
+
+        // Build filter chips from data
+        let chips = '<div class="filter-chip active" onclick="applyFilter(this,\'all\')">All</div>';
+        fnSet.forEach(fn => {
+            chips += `<div class="filter-chip" onclick="applyFilter(this,'fn:${fn}')">${fn}</div>`;
+        });
+        document.getElementById('filters').innerHTML = chips;
+
+        document.getElementById('staffList').innerHTML = staff.map(renderCard).join('');
+        document.getElementById('loading').style.display='none';
+        document.getElementById('app').style.display='';
+    } catch(e){
+        console.error(e);
+        // Fall back to demo data instead of failing
+        renderFromData({staff: DEMO_STAFF});
+    }
+}
+
+function renderFromData(d){
+    const staff = d.staff;
+    if(!staff.length){
+        document.getElementById('loading').style.display='none';
+        document.getElementById('app').style.display='';
+        document.getElementById('staffList').innerHTML='<div class="empty">No direct reports found</div>';
+        return;
+    }
+    let totalTPs = 0;
+    const fnSet = new Set();
+    staff.forEach(s => { totalTPs += s.touchpoint_count; if(s.job_function) fnSet.add(s.job_function); });
+    document.getElementById('sStaff').textContent = staff.length;
+    document.getElementById('sTPs').textContent = totalTPs;
+    document.getElementById('sAvg').textContent = staff.length ? (totalTPs/staff.length).toFixed(1) : '—';
+    let chips = '<div class="filter-chip active" onclick="applyFilter(this,\'all\')">All</div>';
+    fnSet.forEach(fn => { chips += `<div class="filter-chip" onclick="applyFilter(this,'fn:${fn}')">${fn}</div>`; });
+    document.getElementById('filters').innerHTML = chips;
+    document.getElementById('staffList').innerHTML = staff.map(renderCard).join('');
+    document.getElementById('loading').style.display='none';
+    document.getElementById('app').style.display='';
+}
+
+function filterStaff(q){
+    const qq = q.toLowerCase();
+    document.querySelectorAll('.staff-card').forEach(c => {
+        c.style.display = c.textContent.toLowerCase().includes(qq) ? '' : 'none';
+    });
+}
+
+function applyFilter(el, filter){
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('.staff-card').forEach(c => {
+        if(filter === 'all'){ c.style.display=''; return; }
+        if(filter.startsWith('fn:')){
+            c.style.display = c.dataset.function === filter.slice(3) ? '' : 'none';
+        }
+    });
+}
+
+load();
+</script>
+</body>
+</html>
